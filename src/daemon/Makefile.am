@@ -1,0 +1,4 @@
+bin_PROGRAMS=krake
+krake_SOURCES=core/krk_core.c core/krk_socket.c
+
+

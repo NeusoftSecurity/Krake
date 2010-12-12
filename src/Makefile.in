@@ -33,7 +33,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = krake$(EXEEXT)
-subdir = src/core
+subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
@@ -45,7 +45,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_krake_OBJECTS = krk_core.$(OBJEXT)
+am_krake_OBJECTS = krk_core.$(OBJEXT) krk_socket.$(OBJEXT)
 krake_OBJECTS = $(am_krake_OBJECTS)
 krake_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -144,7 +144,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-krake_SOURCES = krk_core.c
+krake_SOURCES = core/krk_core.c core/krk_socket.c
 all: all-am
 
 .SUFFIXES:
@@ -158,9 +158,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/core/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/core/Makefile
+	  $(AUTOMAKE) --gnu src/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -227,6 +227,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_core.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_socket.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -241,6 +242,34 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+krk_core.o: core/krk_core.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_core.o -MD -MP -MF $(DEPDIR)/krk_core.Tpo -c -o krk_core.o `test -f 'core/krk_core.c' || echo '$(srcdir)/'`core/krk_core.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_core.Tpo $(DEPDIR)/krk_core.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='core/krk_core.c' object='krk_core.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_core.o `test -f 'core/krk_core.c' || echo '$(srcdir)/'`core/krk_core.c
+
+krk_core.obj: core/krk_core.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_core.obj -MD -MP -MF $(DEPDIR)/krk_core.Tpo -c -o krk_core.obj `if test -f 'core/krk_core.c'; then $(CYGPATH_W) 'core/krk_core.c'; else $(CYGPATH_W) '$(srcdir)/core/krk_core.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_core.Tpo $(DEPDIR)/krk_core.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='core/krk_core.c' object='krk_core.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_core.obj `if test -f 'core/krk_core.c'; then $(CYGPATH_W) 'core/krk_core.c'; else $(CYGPATH_W) '$(srcdir)/core/krk_core.c'; fi`
+
+krk_socket.o: core/krk_socket.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_socket.o -MD -MP -MF $(DEPDIR)/krk_socket.Tpo -c -o krk_socket.o `test -f 'core/krk_socket.c' || echo '$(srcdir)/'`core/krk_socket.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_socket.Tpo $(DEPDIR)/krk_socket.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='core/krk_socket.c' object='krk_socket.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_socket.o `test -f 'core/krk_socket.c' || echo '$(srcdir)/'`core/krk_socket.c
+
+krk_socket.obj: core/krk_socket.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_socket.obj -MD -MP -MF $(DEPDIR)/krk_socket.Tpo -c -o krk_socket.obj `if test -f 'core/krk_socket.c'; then $(CYGPATH_W) 'core/krk_socket.c'; else $(CYGPATH_W) '$(srcdir)/core/krk_socket.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_socket.Tpo $(DEPDIR)/krk_socket.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='core/krk_socket.c' object='krk_socket.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_socket.obj `if test -f 'core/krk_socket.c'; then $(CYGPATH_W) 'core/krk_socket.c'; else $(CYGPATH_W) '$(srcdir)/core/krk_socket.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
