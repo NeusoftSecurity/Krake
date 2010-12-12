@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <krk_core.h>
 
 int main(int argc, char* argv[])

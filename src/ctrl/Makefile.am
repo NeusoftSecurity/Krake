@@ -1,4 +1,4 @@
-bin_PROGRAMS=krake-ctrl
-krake_SOURCES=krk_ctrl.c
+bin_PROGRAMS=krakectrl
+krakectrl_SOURCES=krk_ctrl.c
 
 
