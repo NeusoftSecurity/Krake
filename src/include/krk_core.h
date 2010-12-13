@@ -6,5 +6,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#define DEFAULT_PID_FILE "/tmp/krake.pid"
+#define PATH_MAX 64
 
 #endif
