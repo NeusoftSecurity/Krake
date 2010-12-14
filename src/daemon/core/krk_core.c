@@ -17,18 +17,16 @@
 #include <krk_socket.h>
 
 static const struct option optlong[] = {
-	{"pid-file", 1, NULL, 'p'},
 	{"help", 0, NULL, 'h'},
 	{"version", 0, NULL, 'v'},
 	{NULL, 0, NULL, 0}
 };
 
-static const char* optstring = "p:hv";
+static const char* optstring = "hv";
 
 static void krk_usage(void)
 {
 	printf("Usage: krake [option]\n"
-			"\t--pid-file/-p	Change path of pid file, default is /tmp/krake.pid\n"
 			"\t--version/-v		Show Krake version\n"
 			"\t--help/-h		Show this help\n");
 }
@@ -46,7 +44,7 @@ static void krk_version(void)
  *	Richard Stevens' APUE.
  *	returns 0 for success.
  */
-static int krk_daemonize(void)
+static inline int krk_daemonize(void)
 {
 	pid_t pid;
 
@@ -65,16 +63,64 @@ static int krk_daemonize(void)
 	return 0;
 }
 
+inline int krk_remove_pid_file()
+{
+	int ret;
+
+	ret = unlink(PID_FILE);
+	if (ret) 
+		return -1;
+	
+	return 0;
+}
+
+/**
+ *	krk_create_pid_file - check and create pid file
+ *	@
+ *
+ *	check if there is a pid file already. if not, 
+ *	create a new one.
+ */
+static inline int krk_create_pid_file(void)
+{
+	pid_t pid;
+	int n;
+	int fd = 0;
+	
+	fd = open(PID_FILE, O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+	
+	if (fd < 0 && errno == EEXIST) {
+		fprintf(stderr, "Fatal: krake already running\n");
+		return -1;
+	} else {
+		pid = getpid();
+		
+		n = write(fd, &pid, sizeof(pid));
+		if (n != sizeof(pid)) {
+			fprintf(stderr, "Fatal: write pid file failed\n");
+			(void)krk_remove_pid_file();
+			close(fd);
+			return -1;
+		}
+	}
+
+	close(fd);
+	
+	return 0;
+}
+
+/** 
+ * should I move the signal related functions 
+ * into a new file? 
+ */
+static inline void krk_signals(void)
+{
+	
+}
+
 int main(int argc, char* argv[])
 {
-	int opt, quit = 0;
-	char pid_file[PATH_MAX] = {0};
-	
-	/**
-	 * 1) Handle the args;
-	 * 2) Make myself a daemon;
-	 * 3) Enter main loop and wait for some events.
-	 */
+	int opt, quit = 0, ret;
 
 	while (1) {
 		opt = getopt_long(argc, argv, optstring, optlong, NULL);
@@ -83,14 +129,6 @@ int main(int argc, char* argv[])
 			break;
 
 		switch (opt) {
-			case 'p':
-				if (strlen(optarg) >= PATH_MAX) {
-					fprintf(stderr, "Fatal: pid filename too long\n");
-					exit(1);
-				}
-				
-				strcpy(pid_file, optarg);
-				break;
 			case 'h':
 				krk_usage();
 				quit = 1;
@@ -107,13 +145,28 @@ int main(int argc, char* argv[])
 
 	if (quit)
 		return 0;
-
-	/* handle pid file */
 	
 	/* daemonize myself */
 	if (krk_daemonize()) {
 		fprintf(stderr, "Fatal: failed to become a daemon\n");
 		return 1;
+	}
+	
+	/* pid file must be handled after daemonize */
+	ret = krk_create_pid_file();
+	if (ret) {
+		return 1;
+	}
+
+	/* handle signals */
+	krk_signals();
+
+	/* go into the main loop, and wait for events */
+	while(1);
+	
+	ret = krk_remove_pid_file();
+	if (ret) {
+		fprintf(stderr, "Fatal: remove krake pid file failed\n");
 	}
 	
 	return 0;

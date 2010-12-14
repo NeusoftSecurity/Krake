@@ -9,8 +9,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 
-#define DEFAULT_PID_FILE "/tmp/krake.pid"
-#define PATH_MAX 64
+#define PID_FILE "/tmp/krake.pid"
 
 #endif
