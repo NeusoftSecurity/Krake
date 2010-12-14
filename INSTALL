@@ -1,0 +1,13 @@
+1) for source codes from the git tree:
+aclocal
+autoheader
+autoconf
+automake -a
+./configure
+make
+make install
+
+2) for release tarball:
+./configure
+make 
+make install
