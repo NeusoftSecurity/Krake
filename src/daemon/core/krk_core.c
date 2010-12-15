@@ -37,12 +37,12 @@ static void krk_version(void)
 }
 
 /**
- *	krk_daemonize - daemonize routine
- *	@
+ * krk_daemonize - daemonize routine
+ * @
  *
- *	a "standard" daemon init routine according to 
- *	Richard Stevens' APUE.
- *	returns 0 for success.
+ * a "standard" daemon init routine according to 
+ * Richard Stevens' APUE.
+ * returns 0 for success.
  */
 static inline int krk_daemonize(void)
 {
@@ -75,11 +75,11 @@ inline int krk_remove_pid_file()
 }
 
 /**
- *	krk_create_pid_file - check and create pid file
- *	@
+ * krk_create_pid_file - check and create pid file
+ * @
  *
- *	check if there is a pid file already. if not, 
- *	create a new one.
+ * check if there is a pid file already. if not, 
+ * create a new one.
  */
 static inline int krk_create_pid_file(void)
 {
@@ -113,14 +113,31 @@ static inline int krk_create_pid_file(void)
  * should I move the signal related functions 
  * into a new file? 
  */
+static inline void krk_smooth_quit(int signo)
+{
+	int ret;
+
+	fprintf(stderr, "Krake: caught signal %d\n", signo);
+	ret = krk_remove_pid_file();
+
+	if (ret)
+		exit(1);
+	else
+		exit(0);
+}
+
 static inline void krk_signals(void)
 {
-	
+	signal(SIGINT, krk_smooth_quit);	
+	signal(SIGKILL, krk_smooth_quit);	
+	signal(SIGQUIT, krk_smooth_quit);	
+	signal(SIGTERM, krk_smooth_quit);	
+	signal(SIGSEGV, krk_smooth_quit);	
 }
 
 int main(int argc, char* argv[])
 {
-	int opt, quit = 0, ret;
+	int opt, quit = 0;
 
 	while (1) {
 		opt = getopt_long(argc, argv, optstring, optlong, NULL);
@@ -153,8 +170,7 @@ int main(int argc, char* argv[])
 	}
 	
 	/* pid file must be handled after daemonize */
-	ret = krk_create_pid_file();
-	if (ret) {
+	if(krk_create_pid_file()) {
 		return 1;
 	}
 
@@ -162,11 +178,16 @@ int main(int argc, char* argv[])
 	krk_signals();
 
 	/* go into the main loop, and wait for events */
-	while(1);
+	if (krk_events_init()) {
+		fprintf(stderr, "Fatal: init event failed\n");
+		return 1;
+	}
+
+	krk_events_loop();
 	
-	ret = krk_remove_pid_file();
-	if (ret) {
+	if (krk_remove_pid_file()) {
 		fprintf(stderr, "Fatal: remove krake pid file failed\n");
+		return 1;
 	}
 	
 	return 0;

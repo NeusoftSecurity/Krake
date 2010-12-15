@@ -1,6 +1,19 @@
-#ifndef __KRK_CORE_H__
-#define __KRK_CORE_H__
+/**
+ * krk_socket.h - Krake socket
+ * 
+ * Copyright (c) 2010 Yang Yang <paulyang.inf@gmail.com>
+ *
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ */
 
-extern krk_main_event_loop(void);
+#ifndef __KRK_SOCKET_H__
+#define __KRK_SOCKET_H__
+
+extern int krk_events_init(void);
+extern void krk_events_loop(void);
 
 #endif
