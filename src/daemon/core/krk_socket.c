@@ -12,22 +12,30 @@
  * (at your option) any later version.
  */
 
-int krk_events_init(void);
-void krk_events_loop(void);
+#include <krk_core.h>
+#include <krk_socket.h>
+
+int krk_open_local_socket(void);
 
 /**
- * krk_events_init - init events
+ * krk_open_local_socket - open a unix socket
  * @
  *
- * init the unix socket that used with krakectrl.
- * return 0 on success
+ * open a unix tcp socket for receive commands
+ * from krakectrl, return 0 if success.
  */
-int krk_events_init(void)
+int krk_open_local_socket(void)
 {
-	return 0;
+	int sock;
+	struct sockaddr_un addr;
+
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (sock < 0) {
+		fprintf(stderr, "Fatal: create unix socket failed\n");
+		return -1;
+	}
+
+	fcntl(sock, F_SETFL, O_NONBLOCK);
 }
 
-void krk_events_loop(void)
-{
-	while(1);
-}
+

@@ -10,13 +10,10 @@
  * (at your option) any later version.
  */
 
-#ifndef __KRK_SOCKET_H__
-#define __KRK_SOCKET_H__
+#ifndef __KRK_EVENT_H__
+#define __KRK_EVENT_H__
 
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/types.h>
-
-extern int krk_open_local_socket(void);
+extern int krk_events_init(void);
+extern void krk_events_loop(void);
 
 #endif
