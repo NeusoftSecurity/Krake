@@ -13,6 +13,8 @@
 #ifndef __KRK_EVENT_H__
 #define __KRK_EVENT_H__
 
+#include <event.h>
+
 extern int krk_events_init(void);
 extern void krk_events_loop(void);
 
