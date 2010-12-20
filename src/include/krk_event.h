@@ -15,7 +15,15 @@
 
 #include <event.h>
 
-extern int krk_events_init(void);
-extern void krk_events_loop(void);
+extern int krk_event_init(void);
+extern void krk_event_loop(void);
+
+int (*ev_handler)();
+
+struct krk_event {
+	struct event *ev;
+	struct timeval *w_timeout;
+	int sock;
+};
 
 #endif

@@ -178,12 +178,12 @@ int main(int argc, char* argv[])
 	krk_signals();
 
 	/* go into the main loop, and wait for events */
-	if (krk_events_init()) {
+	if (krk_event_init()) {
 		fprintf(stderr, "Fatal: init event failed\n");
 		return 1;
 	}
 
-	krk_events_loop();
+	krk_event_loop();
 	
 	if (krk_remove_pid_file()) {
 		fprintf(stderr, "Fatal: remove krake pid file failed\n");

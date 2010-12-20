@@ -18,5 +18,6 @@
 #include <sys/types.h>
 
 extern int krk_open_local_socket(void);
+extern void krk_local_accept(int sock, short type, void *arg);
 
 #endif
