@@ -11,8 +11,30 @@ AM_INIT_AUTOMAKE(krake, 0.1)
 AC_PROG_CC
 
 # Checks for libraries.
+LEVENT=""
+AC_CHECK_LIB([event], [event_dispatch], , LEVENT="no")
+
+if test "$LEVENT" = "no"; then
+    echo
+    echo "   ERROR!  libevent library not found, go get it from"
+    echo "   http://monkey.org/~provos/libevent/"
+    echo "   or use the --with-libevent-* options, if you have it installed"
+    echo "   in unusual place"
+    exit
+fi
 
 # Checks for header files.
+LEVENT=""
+AC_CHECK_HEADERS([event.h], , LEVENT="no")
+
+if test "$LEVENT" = "no"; then
+    echo
+    echo "   ERROR!  libevent headers not found, go get it from"
+    echo "   http://monkey.org/~provos/libevent/"
+    echo "   or use the --with-libevent-* options, if you have it installed"
+    echo "   in unusual place"
+    exit
+fi
 
 # Checks for typedefs, structures, and compiler characteristics.
 
