@@ -15,6 +15,8 @@
 #include <config.h>
 #include <krk_core.h>
 #include <krk_socket.h>
+#include <krk_event.h>
+#include <krk_connection.h>
 
 static const struct option optlong[] = {
 	{"help", 0, NULL, 'h'},
@@ -176,9 +178,18 @@ int main(int argc, char* argv[])
 
 	/* handle signals */
 	krk_signals();
-
-	/* go into the main loop, and wait for events */
+	
+	if (krk_connection_init()) {
+		fprintf(stderr, "Fatal: init connection failed\n");
+		return 1;
+	}
+	
 	if (krk_event_init()) {
+		fprintf(stderr, "Fatal: init event failed\n");
+		return 1;
+	}
+
+	if (krk_local_socket_init()) {
 		fprintf(stderr, "Fatal: init event failed\n");
 		return 1;
 	}
