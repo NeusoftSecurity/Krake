@@ -14,7 +14,7 @@
 #define __KRK_CONNECTION_H__
 
 #include <krk_event.h>
-
+#include <krk_list.h>
 
 struct krk_connection {
 	char name[32];
@@ -23,10 +23,14 @@ struct krk_connection {
 	struct krk_event *wev;
 
 	int sock;
+	
+	struct list_head list;
 };
 
 extern struct krk_connection* krk_connection_create(const char *name);
 extern int krk_connection_destroy(struct krk_connection *conn);
 extern int krk_connection_init(void);
+extern int krk_all_connections_destroy(void);
+extern int krk_connection_exit(void);
 
 #endif

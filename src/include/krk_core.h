@@ -27,4 +27,5 @@
 
 #define PID_FILE "/tmp/krake.pid"
 
+
 #endif

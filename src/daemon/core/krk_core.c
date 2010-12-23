@@ -120,6 +120,13 @@ static inline void krk_smooth_quit(int signo)
 	int ret;
 
 	fprintf(stderr, "Krake: caught signal %d\n", signo);
+
+	krk_connection_exit();
+	
+	krk_event_exit();
+
+	krk_local_socket_exit();
+	
 	ret = krk_remove_pid_file();
 
 	if (ret)

@@ -16,19 +16,17 @@
 struct krk_connection* krk_connection_create(const char *name);
 int krk_connection_destroy(struct krk_connection *conn);
 int krk_connection_init(void);
+int krk_all_connections_destroy(void);
+int krk_connection_exit(void);
 
 
-/*TODO: add a list head to recorde all connections 
- * 
- * a list head is something like: 
- *         krk_list_head krk_all_connections;
- *
- * and i need a couple of functions to operate the list.
- */
+LIST_HEAD(krk_all_connections);
+unsigned int krk_max_connections = 0;
+unsigned int krk_nr_connections = 0;
+
 
 /**
  * krk_connection_create - create a new connection
- * 
  * @name: name of the new connection
  *
  * 
@@ -38,6 +36,10 @@ int krk_connection_init(void);
 struct krk_connection* krk_connection_create(const char *name)
 {
 	struct krk_connection *conn;
+
+	if (krk_nr_connections == krk_max_connections) {
+		return NULL;
+	}
 
 	conn = malloc(sizeof(struct krk_connection));
 	if (!conn) {
@@ -66,12 +68,15 @@ struct krk_connection* krk_connection_create(const char *name)
 
 	memcpy(conn->name, name, sizeof(conn->name) - 1);
 
+	list_add_tail(&conn->list, &krk_all_connections);
+	
+	krk_nr_connections++;
+
 	return conn;
 }
 
 /**
  * krk_connection_destroy - destroy a connection
- * 
  * @conn: connection to destroy
  *
  * 
@@ -91,10 +96,46 @@ int krk_connection_destroy(struct krk_connection *conn)
 
 	free(conn);
 
+	list_del(&conn->list);
+
+	krk_nr_connections--;
+
 	return 0;
+}
+
+/**
+ * krk_all_connections_destroy - destroy all connections
+ * @
+ * 
+ * return 0 for success;
+ * -1 for failed.
+ */
+int krk_all_connections_destroy(void)
+{
+	struct list_head *p, *n;
+	struct krk_connection *tmp;
+	int ret = 0;
+
+	list_for_each_safe(p, n, &krk_all_connections) {
+		tmp = list_entry(p, struct krk_connection, list);
+		if (krk_connection_destroy(tmp)) {
+			ret = -1;
+		}
+	}
+
+	return ret;
 }
 
 int krk_connection_init(void)
 {
+	INIT_LIST_HEAD(&krk_all_connections);
+
+	krk_max_connections = 1024;
+
 	return 0;
+}
+
+int krk_connection_exit(void)
+{
+	return krk_all_connections_destroy();
 }

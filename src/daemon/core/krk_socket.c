@@ -3,8 +3,7 @@
  * 
  * Copyright (c) 2010 Yang Yang <paulyang.inf@gmail.com>
  *
- * This file contains the functions related to socket, such as
- * event process, 
+ * This file contains the functions related to unix socket 
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,7 +36,7 @@ static int krk_open_local_socket(void)
 
 	memset(&addr, 0, sizeof(struct sockaddr_un));
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, "/tmp/krake.sock", 
+	strncpy(addr.sun_path, LOCAL_SOCK_PATH, 
 			sizeof(addr.sun_path) - 1);
 	
 	ret = bind(sock, (struct sockaddr*)&addr, sizeof(struct sockaddr_un));
@@ -46,7 +45,7 @@ static int krk_open_local_socket(void)
 		return -1;
 	}
 
-	ret = listen(sock, 5);
+	ret = listen(sock, LOCAL_SOCK_BACKLOG);
 	if (ret < 0) {
 		fprintf(stderr, "Fatal: listen unix socket failed\n");
 		return -1;
@@ -88,4 +87,16 @@ int krk_local_socket_init(void)
 	krk_event_set_read(sock, listen_conn->rev);
 
 	return krk_event_add(listen_conn->rev);
+}
+
+int krk_local_socket_exit(void)
+{
+	int fd;
+
+	/* sock was already closed by krk_connection_destroy */
+
+	if (unlink(LOCAL_SOCK_PATH) < 0) 
+		return -1;
+	else
+		return 0;
 }

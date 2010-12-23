@@ -96,6 +96,17 @@ int krk_event_init(void)
 	return 0;
 }
 
+/**
+ * krk_event_exit - exit events
+ * @
+ *
+ * return 0 on success
+ */
+int krk_event_exit(void)
+{
+	return 0;
+}
+
 int krk_event_add(struct krk_event *event)
 {
 	return event_add(event->ev, event->timeout);

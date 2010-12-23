@@ -17,4 +17,11 @@
 #include <sys/un.h>
 #include <sys/types.h>
 
+
+#define LOCAL_SOCK_PATH "/tmp/krake.sock"
+#define LOCAL_SOCK_BACKLOG 5
+
+extern int krk_local_socket_init(void);
+extern int krk_local_socket_exit(void);
+
 #endif

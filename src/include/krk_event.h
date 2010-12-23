@@ -29,6 +29,7 @@ struct krk_event {
 
 
 extern int krk_event_init(void);
+extern int krk_event_exit(void);
 extern void krk_event_loop(void);
 extern int krk_event_add(struct krk_event *event);
 extern int krk_event_del(struct krk_event *event);
