@@ -15,10 +15,43 @@
 #include <krk_socket.h>
 #include <krk_event.h>
 #include <krk_connection.h>
+#include <krk_config.h>
 
 void krk_local_accept(int listen_sock, short type, void *arg)
 {
-	fprintf(stderr, "accept one unix connection\n");
+	struct sockaddr_un remote_addr;
+	int sock, remote_addr_size;
+	struct krk_event *event;
+	struct krk_connection *listen_conn, *conn;
+
+	remote_addr_size = sizeof(struct sockaddr_un);
+	sock = accept(listen_sock, (struct sockaddr *)&remote_addr, 
+			&remote_addr_size);
+	if (sock < 0) {
+		fprintf(stderr, "Fatal: accept unix socket failed\n");
+		goto re_arm;
+	}
+
+	fcntl(sock, F_SETFL, O_NONBLOCK);
+	
+	conn = krk_connection_create("config_conn");
+	if (!conn) {
+		goto re_arm;
+	}
+
+	conn->sock = sock;
+	conn->rev->handler = krk_config_read;
+	conn->wev->handler = krk_config_write;
+		
+	krk_event_set_read(sock, conn->rev);
+	krk_event_add(conn->rev);
+
+re_arm:
+	event = arg;
+	
+	krk_event_set_read(listen_sock, event);
+
+	return krk_event_add(event);
 }
 
 static int krk_open_local_socket(void)

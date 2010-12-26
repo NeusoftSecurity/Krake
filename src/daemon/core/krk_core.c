@@ -115,19 +115,24 @@ static inline int krk_create_pid_file(void)
  * should I move the signal related functions 
  * into a new file? 
  */
-static inline void krk_smooth_quit(int signo)
+static inline int __krk_smooth_quit(void)
 {
-	int ret;
-
-	fprintf(stderr, "Krake: caught signal %d\n", signo);
-
 	krk_connection_exit();
 	
 	krk_event_exit();
 
 	krk_local_socket_exit();
 	
-	ret = krk_remove_pid_file();
+	return krk_remove_pid_file();
+}
+
+static inline void krk_smooth_quit(int signo)
+{
+	int ret;
+
+	fprintf(stderr, "Krake: caught signal %d\n", signo);
+
+	ret = __krk_smooth_quit();
 
 	if (ret)
 		exit(1);
@@ -202,9 +207,10 @@ int main(int argc, char* argv[])
 	}
 
 	krk_event_loop();
-	
-	if (krk_remove_pid_file()) {
-		fprintf(stderr, "Fatal: remove krake pid file failed\n");
+
+	/* quit */
+	if (__krk_smooth_quit()) {
+		fprintf(stderr, "Fatal: smooth quit failed\n");
 		return 1;
 	}
 	
