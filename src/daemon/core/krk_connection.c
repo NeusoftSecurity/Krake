@@ -11,9 +11,10 @@
  */
 
 #include <krk_core.h>
+#include <krk_event.h>
 #include <krk_connection.h>
 
-struct krk_connection* krk_connection_create(const char *name);
+struct krk_connection* krk_connection_create(const char *name, size_t rbufsz, size_t wbufsz);
 int krk_connection_destroy(struct krk_connection *conn);
 int krk_connection_init(void);
 int krk_all_connections_destroy(void);
@@ -28,12 +29,14 @@ unsigned int krk_nr_connections = 0;
 /**
  * krk_connection_create - create a new connection
  * @name: name of the new connection
+ * @rbufsz: size of read buffer, 0 for default
+ * @wbufsz: size of write buffer, 0 for default
  *
  * 
  * return address of new connection for success;
  * NULL for failed.
  */
-struct krk_connection* krk_connection_create(const char *name)
+struct krk_connection* krk_connection_create(const char *name, size_t rbufsz, size_t wbufsz)
 {
 	struct krk_connection *conn;
 
@@ -49,7 +52,7 @@ struct krk_connection* krk_connection_create(const char *name)
 	memset(conn, 0, sizeof(struct krk_connection));
 	
 	/* create read/write event */
-	conn->rev = krk_event_create();
+	conn->rev = krk_event_create(rbufsz);
 	if (!conn->rev) {
 		free(conn);
 		return NULL;
@@ -57,7 +60,7 @@ struct krk_connection* krk_connection_create(const char *name)
 		conn->rev->conn = conn;
 	}
 
-	conn->wev = krk_event_create();
+	conn->wev = krk_event_create(wbufsz);
 	if (!conn->wev) {
 		(void)krk_event_destroy(conn->rev);
 		free(conn);

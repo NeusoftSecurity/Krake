@@ -14,29 +14,43 @@
 #include <krk_socket.h>
 #include <krk_event.h>
 #include <krk_connection.h>
+#include <krk_config.h>
+#include <krk_buffer.h>
 
 void krk_config_read(int sock, short type, void *arg);
 void krk_config_write(int sock, short type, void *arg);
 
+int krk_config_process(struct krk_connection *conn)
+{
+	/* return value to client */
+//	krk_event_set_write(sock, conn->wev);
+//	krk_event_add(wev);
+
+	return 0;
+}
 
 void krk_config_read(int sock, short type, void *arg)
 {
-	int n;
+	int n, ret;
 	struct krk_event *rev;
 	struct krk_connection *conn;
-	char tmp[128];
 	
-	memset(tmp, 0, 128);
 	fprintf(stderr, "read config\n");
 
 	rev = arg;
 	conn = rev->conn;
-
-	n = recv(sock, tmp, 127, 0);
+	
+	n = recv(sock, rev->buf->last, rev->buf->end - rev->buf->last, 0);
 	if (n == 0 || n < 0) {
 		fprintf(stderr, "read config finished or error\n");
 		krk_connection_destroy(conn);
 		return;
+	}
+
+	ret = krk_config_process(conn);
+	if (ret == KRK_AGAIN) {
+		/* KRK_AGAIN means command not completed */
+		goto re_arm;
 	}
 
 re_arm:
@@ -46,7 +60,5 @@ re_arm:
 
 void krk_config_write(int sock, short type, void *arg)
 {
-//	int n;
 
-//	n = recv();
 }

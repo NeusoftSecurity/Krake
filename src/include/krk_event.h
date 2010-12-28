@@ -17,14 +17,12 @@
 
 typedef void (*ev_handler)(int sock, short type, void *arg);
 
-
-struct krk_connection;
-
 struct krk_event {
 	struct event *ev;
 	struct timeval *timeout;
 	ev_handler handler;
-	struct krk_connection *conn;
+	void *conn;
+	struct krk_buffer *buf;
 };
 
 
@@ -33,7 +31,7 @@ extern int krk_event_exit(void);
 extern void krk_event_loop(void);
 extern int krk_event_add(struct krk_event *event);
 extern int krk_event_del(struct krk_event *event);
-extern struct krk_event* krk_event_create(void);
+extern struct krk_event* krk_event_create(size_t bufsz);
 extern int krk_event_destroy(struct krk_event* event);
 extern void krk_event_set(int sock, struct krk_event *event, short type);
 extern void krk_event_set_read(int sock, struct krk_event *event);

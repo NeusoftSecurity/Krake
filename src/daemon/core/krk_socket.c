@@ -34,7 +34,7 @@ void krk_local_accept(int listen_sock, short type, void *arg)
 
 	fcntl(sock, F_SETFL, O_NONBLOCK);
 	
-	conn = krk_connection_create("config_conn");
+	conn = krk_connection_create("config_conn", 0, 0);
 	if (!conn) {
 		goto re_arm;
 	}
@@ -50,8 +50,7 @@ re_arm:
 	event = arg;
 	
 	krk_event_set_read(listen_sock, event);
-
-	return krk_event_add(event);
+	krk_event_add(event);
 }
 
 static int krk_open_local_socket(void)
@@ -109,7 +108,7 @@ int krk_local_socket_init(void)
 		return -1;
 	}
 
-	listen_conn = krk_connection_create("local_listen");
+	listen_conn = krk_connection_create("local_listen", 0, 0);
 	if (!listen_conn) {
 		return -1;
 	}

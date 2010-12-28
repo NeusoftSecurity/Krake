@@ -27,5 +27,10 @@
 
 #define PID_FILE "/tmp/krake.pid"
 
+#define KRK_OK 0
+#define KRK_ERROR -1
+#define KRK_AGAIN -2
+#define KRK_BUSY -3
+#define KRK_DONE -4
 
 #endif

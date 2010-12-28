@@ -12,13 +12,13 @@
 
 #include <krk_core.h>
 #include <krk_event.h>
-#include <krk_socket.h>
+#include <krk_buffer.h>
 
 int krk_event_init(void);
 void krk_event_loop(void);
 int krk_event_add(struct krk_event *event);
 int krk_event_del(struct krk_event *event);
-struct krk_event* krk_event_create(void);
+struct krk_event* krk_event_create(size_t bufsz);
 int krk_event_destroy(struct krk_event* event);
 void krk_event_set(int sock, struct krk_event *event, short type);
 void krk_event_set_read(int sock, struct krk_event *event);
@@ -32,7 +32,7 @@ void krk_event_set_write(int sock, struct krk_event *event);
  * return address of new event on success;
  * NULL for failed.
  */
-struct krk_event* krk_event_create(void)
+struct krk_event* krk_event_create(size_t bufsz)
 {
 	struct krk_event* event;
 
@@ -49,12 +49,18 @@ struct krk_event* krk_event_create(void)
 		return NULL;
 	}
 
+	event->buf = krk_buffer_create(bufsz);
+	if (!event->buf) {
+		free(event->ev);
+		free(event);
+		return NULL;
+	}
+
 	return event;
 }
 
 /**
  * krk_event_destroy - destroy an event
- * 
  * @event: event to destroy
  *
  *
@@ -76,6 +82,10 @@ int krk_event_destroy(struct krk_event* event)
 
 	if (event->timeout) {
 		free(event->timeout);
+	}
+
+	if (event->buf) {
+		krk_buffer_destroy(event->buf);
 	}
 
 	free(event);

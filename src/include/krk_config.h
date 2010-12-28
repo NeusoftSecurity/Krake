@@ -16,4 +16,6 @@
 extern void krk_config_read(int sock, short type, void *arg);
 extern void krk_config_write(int sock, short type, void *arg);
 
+#define KRK_CONFIG_MAX_LEN 4096
+
 #endif
