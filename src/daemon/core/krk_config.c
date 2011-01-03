@@ -20,13 +20,13 @@
 void krk_config_read(int sock, short type, void *arg);
 void krk_config_write(int sock, short type, void *arg);
 
-int krk_config_process(struct krk_connection *conn)
+static int krk_config_process(struct krk_connection *conn)
 {
 	/* return value to client */
 //	krk_event_set_write(sock, conn->wev);
 //	krk_event_add(wev);
 
-	return 0;
+	return KRK_DONE;
 }
 
 void krk_config_read(int sock, short type, void *arg)
@@ -48,9 +48,14 @@ void krk_config_read(int sock, short type, void *arg)
 	}
 
 	ret = krk_config_process(conn);
+#if 0
 	if (ret == KRK_AGAIN) {
 		/* KRK_AGAIN means command not completed */
 		goto re_arm;
+	}
+#endif
+	if (ret == KRK_DONE) {
+		rev->buf->last = rev->buf->head;
 	}
 
 re_arm:
