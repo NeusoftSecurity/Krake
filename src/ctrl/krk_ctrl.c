@@ -24,7 +24,7 @@
 #define KRK_OPTION_TIMEOUT 7
 #define KRK_OPTION_THRESHOLD 8
 #define KRK_OPTION_NODE 9
-#define KRK_OPTION_NODE_PORT 10
+#define KRK_OPTION_PORT 10
 
 
 static const struct option optlong[] = {
@@ -43,7 +43,7 @@ static const struct option optlong[] = {
 	{"timeout", 1, NULL, KRK_OPTION_TIMEOUT},
 	{"threshold", 1, NULL, KRK_OPTION_THRESHOLD},
 	{"node", 1, NULL, KRK_OPTION_NODE},
-	{"node-port", 1, NULL, KRK_OPTION_NODE_PORT},
+	{"port", 1, NULL, KRK_OPTION_PORT},
 	{NULL, 0, NULL, 0}
 };
 
@@ -63,12 +63,14 @@ static void krk_ctrl_version(void)
 
 int main(int argc, char* argv[])
 {
-	int sock, ret;
-	int opt, quit = 0, mutex = 0, n;
+	int sock, ret, len;
+	int opt, quit = 0, mutex = 0, n = 0, conf_len = 0;
+	void *ptr;
 	struct sockaddr_un addr;
-	struct krk_config config;
+	struct krk_config *config;
+	char *result;
 
-	/* TODO:
+	/* 
 	 * 1) handle argv
 	 * 2) handle socket to krake daemon
 	 * 3) send configuration to krake daemon
@@ -80,7 +82,8 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	memset(&config, 0, sizeof(struct krk_config));
+	config = malloc(sizeof(struct krk_config));
+	memset(config, 0, sizeof(struct krk_config));
 	
 	while (1) {
 		opt = getopt_long(argc, argv, optstring, optlong, NULL);
@@ -99,8 +102,8 @@ int main(int argc, char* argv[])
 				break;
 			case 'C':
 				if (mutex == 0) {
-					config.command = KRK_CONF_CMD_CREATE;
-					config.type = KRK_CONF_TYPE_MONITOR;
+					config->command = KRK_CONF_CMD_CREATE;
+					config->type = KRK_CONF_TYPE_MONITOR;
 					mutex = 1;
 				} else {
 					goto failed;
@@ -108,8 +111,8 @@ int main(int argc, char* argv[])
 				break;
 			case 'D':
 				if (mutex == 0) {
-					config.command = KRK_CONF_CMD_DESTROY;
-					config.type = KRK_CONF_TYPE_MONITOR;
+					config->command = KRK_CONF_CMD_DESTROY;
+					config->type = KRK_CONF_TYPE_MONITOR;
 					mutex = 1;
 				} else {
 					goto failed;
@@ -117,8 +120,8 @@ int main(int argc, char* argv[])
 				break;
 			case 'A':
 				if (mutex == 0) {
-					config.command = KRK_CONF_CMD_ADD;
-					config.type = KRK_CONF_TYPE_NODE;
+					config->command = KRK_CONF_CMD_ADD;
+					config->type = KRK_CONF_TYPE_NODE;
 					mutex = 1;
 				} else {
 					goto failed;
@@ -126,8 +129,8 @@ int main(int argc, char* argv[])
 				break;
 			case 'R':
 				if (mutex == 0) {
-					config.command = KRK_CONF_CMD_REMOVE;
-					config.type = KRK_CONF_TYPE_NODE;
+					config->command = KRK_CONF_CMD_REMOVE;
+					config->type = KRK_CONF_TYPE_NODE;
 					mutex = 1;
 				} else {
 					goto failed;
@@ -135,8 +138,8 @@ int main(int argc, char* argv[])
 				break;
 			case KRK_OPTION_ENABLE:
 				if (mutex == 0) {
-					config.command = KRK_CONF_CMD_ENABLE;
-					config.type = KRK_CONF_TYPE_MONITOR;
+					config->command = KRK_CONF_CMD_ENABLE;
+					config->type = KRK_CONF_TYPE_MONITOR;
 					mutex = 1;
 				} else {
 					goto failed;
@@ -144,9 +147,78 @@ int main(int argc, char* argv[])
 				break;
 			case KRK_OPTION_DISABLE:
 				if (mutex == 0) {
-					config.command = KRK_CONF_CMD_DISABLE;
-					config.type = KRK_CONF_TYPE_MONITOR;
+					config->command = KRK_CONF_CMD_DISABLE;
+					config->type = KRK_CONF_TYPE_MONITOR;
 					mutex = 1;
+				} else {
+					goto failed;
+				}
+				break;
+			case KRK_OPTION_MONITOR:
+				if (config->type == KRK_CONF_TYPE_MONITOR
+						|| config->type == KRK_CONF_TYPE_NODE) {
+					strcpy(config->monitor, optarg);
+				} else {
+					goto failed;
+				}
+				break;
+			case KRK_OPTION_CHECKER:
+				if (config->type == KRK_CONF_TYPE_MONITOR
+						&& config->monitor[0]) {
+					strcpy(config->checker, optarg);
+				} else {
+					goto failed;
+				}
+				break;
+			case KRK_OPTION_CHECKER_CONF:
+				if (config->type == KRK_CONF_TYPE_MONITOR
+						&& config->checker[0]) {
+					conf_len = strlen(optarg) + 1;
+					config = realloc(config, 
+							sizeof(struct krk_config) + conf_len);
+					config->checker_conf = config->data;
+					strcpy(config->checker_conf, optarg);
+					config->checker_conf_len = conf_len;
+				} else {
+					goto failed;
+				}
+				break;
+			case KRK_OPTION_INTERVAL:
+				if (config->type == KRK_CONF_TYPE_MONITOR
+						&& config->monitor[0]) {
+					config->interval = atoi(optarg);
+				} else {
+					goto failed;
+				}
+				break;
+			case KRK_OPTION_TIMEOUT:
+				if (config->type == KRK_CONF_TYPE_MONITOR
+						&& config->monitor[0]) {
+					config->timeout = atoi(optarg);
+				} else {
+					goto failed;
+				}
+				break;
+			case KRK_OPTION_THRESHOLD:
+				if (config->type == KRK_CONF_TYPE_MONITOR
+						&& config->monitor[0]) {
+					config->threshold = atoi(optarg);
+				} else {
+					goto failed;
+				}
+				break;
+			case KRK_OPTION_NODE:
+				if (config->type == KRK_CONF_TYPE_NODE
+						&& config->monitor[0]) {
+					strcpy(config->node, optarg);
+				} else {
+					goto failed;
+				}
+				break;
+			case KRK_OPTION_PORT:
+				if (config->type == KRK_CONF_TYPE_NODE
+						&& config->node[0]) {
+					config->port = atoi(optarg);
 				} else {
 					goto failed;
 				}
@@ -178,9 +250,63 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	n = send(sock, &config, sizeof(config), 0);
+	ptr = config;
+	len = sizeof(struct krk_config) + conf_len;
+	
+	while(1) {
+		n = send(sock, ptr, len, 0);
+		if (n < 0) {
+			perror("send");
+			return 1;
+		}
+
+		if (n == len) {
+			break;
+		} else {
+			ptr += n;
+			len -= n;
+		}
+	}
+
+	/* wait for reply from krake daemon */
+	result = malloc(KRK_CONF_RETVAL_LEN);
+	len = KRK_CONF_RETVAL_LEN;
+	ptr = result;
+
+	while (1) {
+		n = recv(sock, ptr, len, 0);
+		if (n < 0) {
+			perror("recv");
+			return 1;
+		}
+
+		if (n == len) {
+			break;
+		} else {
+			ptr += n;
+			len -= n;
+		}
+	}
+
+	/**
+	 * the last 4 bytes of result is a number 
+	 * to check if result is completly received.
+	 * '0xcdef5adc' means the notes in C major, 
+	 * 5 means G.
+	 */
+	if (*((int *)(result + 1)) != 0xcdef5abc) {
+		fprintf(stderr, "result is not trustable\n");
+	} else {
+		fprintf(stderr, "Command OK\n");
+	}
+
+	if (result[0] != KRK_CONF_PARSE_OK) {
+		goto failed;
+	}
 
 	close(sock);
+	free(result);
+	free(config);
 
 	return 0;
 

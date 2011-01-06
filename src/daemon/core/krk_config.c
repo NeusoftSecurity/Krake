@@ -20,12 +20,112 @@
 void krk_config_read(int sock, short type, void *arg);
 void krk_config_write(int sock, short type, void *arg);
 
+static inline void krk_config_show_content(struct krk_config *conf)
+{
+#ifndef KRK_DEBUG
+	fprintf(stderr, "config: \n");
+	fprintf(stderr, "\tmonitor: %s\n", conf->monitor);
+	fprintf(stderr, "\tchecker: %s\n", conf->checker);
+	fprintf(stderr, "\tchecker_conf: %s\n", conf->checker_conf);
+	fprintf(stderr, "\tchecker_conf_len: %lu\n", conf->checker_conf_len);
+	fprintf(stderr, "\tinterval: %lu\n", conf->interval);
+	fprintf(stderr, "\ttimeout: %lu\n", conf->timeout);
+	fprintf(stderr, "\tthreshold: %lu\n", conf->threshold);
+	fprintf(stderr, "\tnode: %s\n", conf->node);
+	fprintf(stderr, "\tport: %u\n", conf->port);
+#endif
+}
+
+/**
+ * krk_config_check - check config
+ * @conf: configuration to check
+ *
+ *
+ * return: KRK_OK on success, KRK_ERROR on failed
+ *
+ * Finally I decide to do this check at the daemon
+ * side instead of in krakectrl. This check could
+ * make krake daemon more robust, although this could
+ * impact the performance.
+ */
+static int krk_config_check(struct krk_config *conf)
+{
+	int ret = KRK_OK;
+	return ret;
+}
+
+static int krk_config_parse(struct krk_config *conf)
+{
+	int ret = KRK_OK;;
+
+	switch (conf->command) {
+		case KRK_CONF_CMD_CREATE:
+			break;
+		case KRK_CONF_CMD_DESTROY:
+			break;
+		case KRK_CONF_CMD_ADD:
+			break;
+		case KRK_CONF_CMD_REMOVE:
+			break;
+		case KRK_CONF_CMD_ENABLE:
+			break;
+		case KRK_CONF_CMD_DISABLE:
+			break;
+		default:
+			ret = KRK_ERROR;
+	}
+
+	return ret;
+}
+
 static int krk_config_process(struct krk_connection *conn)
 {
-	/* return value to client */
-//	krk_event_set_write(sock, conn->wev);
-//	krk_event_add(wev);
+	struct krk_config *conf = NULL;
+	struct krk_event *rev = conn->rev;
+	struct krk_event *wev = conn->wev;
+	int buf_len, ret;
+	char retval[KRK_CONF_RETVAL_LEN];
 
+	*(int *)(retval + 1) = 0xcdef5abc;
+	
+	buf_len = rev->buf->last - rev->buf->pos;
+	if (buf_len < sizeof(struct krk_config)) {
+		return KRK_AGAIN;
+	}
+
+	conf = (struct krk_config*)(rev->buf->pos);
+	conf->checker_conf = conf->data;
+	
+	if (buf_len < 
+			(sizeof(struct krk_config) + conf->checker_conf_len)) {
+		return KRK_AGAIN;
+	}
+
+	if (buf_len >
+			(sizeof(struct krk_config) + conf->checker_conf_len)) {
+		return KRK_ERROR;
+	}
+
+	krk_config_show_content(conf);
+
+	ret = krk_config_check(conf);
+	if (ret != KRK_OK) {
+		*retval = KRK_CONF_PARSE_ERROR;
+	} else {
+		ret = krk_config_parse(conf);
+		if (ret != KRK_OK) {
+			*retval = KRK_CONF_PARSE_ERROR;
+		}
+	}
+
+back:
+	/* return value to client */
+	memcpy(wev->buf->pos, retval, sizeof(retval));
+	wev->buf->last += sizeof(retval);
+
+	krk_event_set_write(conn->sock, wev);
+	krk_event_add(wev);
+	
 	return KRK_DONE;
 }
 
@@ -35,35 +135,64 @@ void krk_config_read(int sock, short type, void *arg)
 	struct krk_event *rev;
 	struct krk_connection *conn;
 	
-	fprintf(stderr, "read config\n");
-
 	rev = arg;
 	conn = rev->conn;
 	
 	n = recv(sock, rev->buf->last, rev->buf->end - rev->buf->last, 0);
-	if (n == 0 || n < 0) {
-		fprintf(stderr, "read config finished or error\n");
+	if (n == 0) {
+		fprintf(stderr, "read config finished\n");
 		krk_connection_destroy(conn);
 		return;
 	}
 
+	if (n < 0) {
+		fprintf(stderr, "read config error\n");
+		krk_connection_destroy(conn);
+		return;
+	}
+
+	rev->buf->last += n;
 	ret = krk_config_process(conn);
-#if 0
+
 	if (ret == KRK_AGAIN) {
 		/* KRK_AGAIN means command not completed */
-		goto re_arm;
 	}
-#endif
-	if (ret == KRK_DONE) {
+
+	if (ret == KRK_DONE 
+			|| ret == KRK_ERROR) {
 		rev->buf->last = rev->buf->head;
 	}
 
-re_arm:
 	krk_event_set_read(sock, rev);
 	krk_event_add(rev);
 }
 
 void krk_config_write(int sock, short type, void *arg)
 {
+	int n, ret;
+	struct krk_event *wev;
+	struct krk_connection *conn;
 
+	wev = arg;
+	conn = wev->conn;
+	
+	n = send(sock, wev->buf->pos, wev->buf->last - wev->buf->pos, 0);
+	if (n < 0) {
+		fprintf(stderr, "write config retval error\n");
+		krk_connection_destroy(conn);
+		return;
+	}
+
+	if (n == (wev->buf->last - wev->buf->pos)) {
+		wev->buf->pos = wev->buf->last = wev->buf->head;
+		return;
+	}
+
+	/* write busy, rearm */
+	if (n < (wev->buf->last - wev->buf->pos)) {
+		wev->buf->pos += n;
+	}
+
+	krk_event_set_write(sock, wev);
+	krk_event_add(wev);
 }
