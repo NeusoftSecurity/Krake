@@ -16,13 +16,14 @@
 #include <krk_connection.h>
 #include <krk_config.h>
 #include <krk_buffer.h>
+#include <krk_monitor.h>
+#include <krk_checker.h>
 
 void krk_config_read(int sock, short type, void *arg);
 void krk_config_write(int sock, short type, void *arg);
 
 static inline void krk_config_show_content(struct krk_config *conf)
 {
-#ifndef KRK_DEBUG
 	fprintf(stderr, "config: \n");
 	fprintf(stderr, "\tmonitor: %s\n", conf->monitor);
 	fprintf(stderr, "\tchecker: %s\n", conf->checker);
@@ -33,7 +34,6 @@ static inline void krk_config_show_content(struct krk_config *conf)
 	fprintf(stderr, "\tthreshold: %lu\n", conf->threshold);
 	fprintf(stderr, "\tnode: %s\n", conf->node);
 	fprintf(stderr, "\tport: %u\n", conf->port);
-#endif
 }
 
 /**
@@ -56,25 +56,48 @@ static int krk_config_check(struct krk_config *conf)
 
 static int krk_config_parse(struct krk_config *conf)
 {
-	int ret = KRK_OK;;
+	int ret = KRK_OK;
+	struct krk_monitor *monitor = NULL;
+	struct krk_node *node = NULL;
+
+	if (conf->command != KRK_CONF_CMD_CREATE) {
+		monitor = krk_monitor_find(conf->monitor);
+		if (monitor == NULL) {
+			ret = KRK_ERROR;
+			goto out;;
+		}
+	}
 
 	switch (conf->command) {
 		case KRK_CONF_CMD_CREATE:
+			monitor = krk_monitor_create(conf->monitor);
+			if (monitor == NULL) {
+				ret =  KRK_ERROR;
+				goto out;
+			}
+
+			monitor->interval = conf->interval;
 			break;
 		case KRK_CONF_CMD_DESTROY:
+			ret = krk_monitor_destroy(monitor);
 			break;
 		case KRK_CONF_CMD_ADD:
+			ret = krk_monitor_add_node(monitor, node);
 			break;
 		case KRK_CONF_CMD_REMOVE:
+			ret = krk_monitor_remove_node(monitor, node);
 			break;
 		case KRK_CONF_CMD_ENABLE:
+			krk_monitor_enable(monitor);
 			break;
 		case KRK_CONF_CMD_DISABLE:
+			krk_monitor_disable(monitor);
 			break;
 		default:
 			ret = KRK_ERROR;
 	}
 
+out:
 	return ret;
 }
 
@@ -106,7 +129,9 @@ static int krk_config_process(struct krk_connection *conn)
 		return KRK_ERROR;
 	}
 
+#ifdef KRK_DEBUG
 	krk_config_show_content(conf);
+#endif
 
 	ret = krk_config_check(conf);
 	if (ret != KRK_OK) {
@@ -118,7 +143,6 @@ static int krk_config_process(struct krk_connection *conn)
 		}
 	}
 
-back:
 	/* return value to client */
 	memcpy(wev->buf->pos, retval, sizeof(retval));
 	wev->buf->last += sizeof(retval);
@@ -169,7 +193,7 @@ void krk_config_read(int sock, short type, void *arg)
 
 void krk_config_write(int sock, short type, void *arg)
 {
-	int n, ret;
+	int n;
 	struct krk_event *wev;
 	struct krk_connection *conn;
 

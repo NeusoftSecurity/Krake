@@ -47,7 +47,8 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_krake_OBJECTS = krk_core.$(OBJEXT) krk_socket.$(OBJEXT) \
 	krk_event.$(OBJEXT) krk_connection.$(OBJEXT) \
-	krk_config.$(OBJEXT) krk_buffer.$(OBJEXT)
+	krk_config.$(OBJEXT) krk_buffer.$(OBJEXT) \
+	krk_monitor.$(OBJEXT) krk_checker.$(OBJEXT)
 krake_OBJECTS = $(am_krake_OBJECTS)
 krake_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -150,7 +151,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 krake_SOURCES = core/krk_core.c core/krk_socket.c core/krk_event.c core/krk_connection.c \
-			  core/krk_config.c core/krk_buffer.c
+			  core/krk_config.c core/krk_buffer.c core/krk_monitor.c \
+			  checkers/krk_checker.c
 
 all: all-am
 
@@ -234,10 +236,12 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_buffer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_checker.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_connection.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_core.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_event.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_monitor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_socket.Po@am__quote@
 
 .c.o:
@@ -337,6 +341,34 @@ krk_buffer.obj: core/krk_buffer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='core/krk_buffer.c' object='krk_buffer.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_buffer.obj `if test -f 'core/krk_buffer.c'; then $(CYGPATH_W) 'core/krk_buffer.c'; else $(CYGPATH_W) '$(srcdir)/core/krk_buffer.c'; fi`
+
+krk_monitor.o: core/krk_monitor.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_monitor.o -MD -MP -MF $(DEPDIR)/krk_monitor.Tpo -c -o krk_monitor.o `test -f 'core/krk_monitor.c' || echo '$(srcdir)/'`core/krk_monitor.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_monitor.Tpo $(DEPDIR)/krk_monitor.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='core/krk_monitor.c' object='krk_monitor.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_monitor.o `test -f 'core/krk_monitor.c' || echo '$(srcdir)/'`core/krk_monitor.c
+
+krk_monitor.obj: core/krk_monitor.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_monitor.obj -MD -MP -MF $(DEPDIR)/krk_monitor.Tpo -c -o krk_monitor.obj `if test -f 'core/krk_monitor.c'; then $(CYGPATH_W) 'core/krk_monitor.c'; else $(CYGPATH_W) '$(srcdir)/core/krk_monitor.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_monitor.Tpo $(DEPDIR)/krk_monitor.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='core/krk_monitor.c' object='krk_monitor.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_monitor.obj `if test -f 'core/krk_monitor.c'; then $(CYGPATH_W) 'core/krk_monitor.c'; else $(CYGPATH_W) '$(srcdir)/core/krk_monitor.c'; fi`
+
+krk_checker.o: checkers/krk_checker.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_checker.o -MD -MP -MF $(DEPDIR)/krk_checker.Tpo -c -o krk_checker.o `test -f 'checkers/krk_checker.c' || echo '$(srcdir)/'`checkers/krk_checker.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_checker.Tpo $(DEPDIR)/krk_checker.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='checkers/krk_checker.c' object='krk_checker.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_checker.o `test -f 'checkers/krk_checker.c' || echo '$(srcdir)/'`checkers/krk_checker.c
+
+krk_checker.obj: checkers/krk_checker.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_checker.obj -MD -MP -MF $(DEPDIR)/krk_checker.Tpo -c -o krk_checker.obj `if test -f 'checkers/krk_checker.c'; then $(CYGPATH_W) 'checkers/krk_checker.c'; else $(CYGPATH_W) '$(srcdir)/checkers/krk_checker.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_checker.Tpo $(DEPDIR)/krk_checker.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='checkers/krk_checker.c' object='krk_checker.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_checker.obj `if test -f 'checkers/krk_checker.c'; then $(CYGPATH_W) 'checkers/krk_checker.c'; else $(CYGPATH_W) '$(srcdir)/checkers/krk_checker.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

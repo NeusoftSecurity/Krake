@@ -90,7 +90,7 @@ struct krk_connection* krk_connection_create(const char *name, size_t rbufsz, si
 int krk_connection_destroy(struct krk_connection *conn)
 {
 	if (!conn) {
-		return -1;
+		return KRK_ERROR;
 	}
 
 	krk_event_destroy(conn->rev);
@@ -98,13 +98,13 @@ int krk_connection_destroy(struct krk_connection *conn)
 
 	close(conn->sock);
 
-	free(conn);
-
 	list_del(&conn->list);
+	
+	free(conn);
 
 	krk_nr_connections--;
 
-	return 0;
+	return KRK_OK;
 }
 
 /**
@@ -118,12 +118,12 @@ int krk_all_connections_destroy(void)
 {
 	struct list_head *p, *n;
 	struct krk_connection *tmp;
-	int ret = 0;
+	int ret = KRK_OK;
 
 	list_for_each_safe(p, n, &krk_all_connections) {
 		tmp = list_entry(p, struct krk_connection, list);
 		if (krk_connection_destroy(tmp)) {
-			ret = -1;
+			ret = KRK_ERROR;
 		}
 	}
 
@@ -136,7 +136,7 @@ int krk_connection_init(void)
 
 	krk_max_connections = 1024;
 
-	return 0;
+	return KRK_OK;
 }
 
 int krk_connection_exit(void)

@@ -16,6 +16,9 @@
  * (at your option) any later version.
  */
 
+#ifndef __KRK_LIST_H__
+#define __KRK_LIST_H__
+
 /*
  * Architectures might want to move the poison pointer offset
  * into some well-recognized area such as 0xdead000000000000,
@@ -593,4 +596,4 @@ static inline void list_splice_tail_init(struct list_head *list,
 #define list_safe_reset_next(pos, n, member)				\
 	n = list_entry(pos->member.next, typeof(*pos), member)
 
-
+#endif

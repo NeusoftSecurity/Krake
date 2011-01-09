@@ -301,6 +301,7 @@ int main(int argc, char* argv[])
 	}
 
 	if (result[0] != KRK_CONF_PARSE_OK) {
+		fprintf(stderr, "Daemon parse failed\n");
 		goto failed;
 	}
 

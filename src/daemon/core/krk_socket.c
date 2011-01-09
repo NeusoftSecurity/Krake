@@ -20,9 +20,10 @@
 void krk_local_accept(int listen_sock, short type, void *arg)
 {
 	struct sockaddr_un remote_addr;
-	int sock, remote_addr_size;
+	int sock;
+	unsigned int remote_addr_size;
 	struct krk_event *event;
-	struct krk_connection *listen_conn, *conn;
+	struct krk_connection *conn;
 
 	remote_addr_size = sizeof(struct sockaddr_un);
 	sock = accept(listen_sock, (struct sockaddr *)&remote_addr, 
@@ -86,10 +87,12 @@ static int krk_open_local_socket(void)
 	return sock;
 }
 
+#if 0
 static int krk_close_local_socket(int local_sock)
 {
 	return close(local_sock);
 }
+#endif
 
 /**
  * krk_local_socket_init - init the cmd channel
@@ -123,8 +126,6 @@ int krk_local_socket_init(void)
 
 int krk_local_socket_exit(void)
 {
-	int fd;
-
 	/* sock was already closed by krk_connection_destroy */
 
 	if (unlink(LOCAL_SOCK_PATH) < 0) 

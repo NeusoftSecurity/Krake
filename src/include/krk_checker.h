@@ -23,12 +23,5 @@ struct krk_checker {
 	unsigned int id;
 };
 
-struct krk_checker checkers = {
-	{"icmp", KRK_CHECKER_ICMP},
-	{"tcp", KRK_CHECKER_TCP},
-	{"http", KRK_CHECKER_HTTP},
-	{"ftp", KRK_CHECKER_FTP},
-};
-
 #endif
 
