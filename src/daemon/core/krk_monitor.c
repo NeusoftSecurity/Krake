@@ -82,7 +82,7 @@ struct krk_monitor* krk_monitor_create(char *name)
 	}
 
 	memset(monitor, 0, sizeof(struct krk_monitor));
-	INIT_LIST_HEAD(monitor->node_list);
+	INIT_LIST_HEAD(&monitor->node_list);
 
 	strcpy(monitor->name, name);
 

@@ -64,7 +64,7 @@ static int krk_config_parse(struct krk_config *conf)
 		monitor = krk_monitor_find(conf->monitor);
 		if (monitor == NULL) {
 			ret = KRK_ERROR;
-			goto out;;
+			goto out;
 		}
 	}
 
@@ -72,7 +72,7 @@ static int krk_config_parse(struct krk_config *conf)
 		case KRK_CONF_CMD_CREATE:
 			monitor = krk_monitor_create(conf->monitor);
 			if (monitor == NULL) {
-				ret =  KRK_ERROR;
+				ret = KRK_ERROR;
 				goto out;
 			}
 
@@ -109,6 +109,7 @@ static int krk_config_process(struct krk_connection *conn)
 	int buf_len, ret;
 	char retval[KRK_CONF_RETVAL_LEN];
 
+	memset(retval, 0, KRK_CONF_RETVAL_LEN);
 	*(int *)(retval + 1) = 0xcdef5abc;
 	
 	buf_len = rev->buf->last - rev->buf->pos;

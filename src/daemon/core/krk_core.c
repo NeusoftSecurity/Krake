@@ -17,6 +17,7 @@
 #include <krk_socket.h>
 #include <krk_event.h>
 #include <krk_connection.h>
+#include <krk_monitor.h>
 
 static const struct option optlong[] = {
 	{"help", 0, NULL, 'h'},
@@ -117,6 +118,8 @@ static inline int krk_create_pid_file(void)
  */
 static inline int __krk_smooth_quit(void)
 {
+	krk_monitor_exit();
+
 	krk_connection_exit();
 	
 	krk_event_exit();
@@ -202,6 +205,11 @@ int main(int argc, char* argv[])
 	}
 
 	if (krk_local_socket_init()) {
+		fprintf(stderr, "Fatal: init event failed\n");
+		return 1;
+	}
+
+	if (krk_monitor_init()) {
 		fprintf(stderr, "Fatal: init event failed\n");
 		return 1;
 	}
