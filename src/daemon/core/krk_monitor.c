@@ -68,7 +68,7 @@ struct krk_monitor* krk_monitor_create(char *name)
 	}
 
 	monitor = krk_monitor_find(name);
-	if (monitor == NULL) {
+	if (monitor != NULL) {
 		return NULL;
 	}
 
