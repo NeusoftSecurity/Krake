@@ -13,8 +13,8 @@
 #include <krk_core.h>
 #include <krk_monitor.h>
 
-struct krk_monitor* krk_monitor_find(char *name);
-struct krk_monitor* krk_monitor_create(char *name);
+struct krk_monitor* krk_monitor_find(const char *name);
+struct krk_monitor* krk_monitor_create(const char *name);
 int krk_monitor_destroy(struct krk_monitor *monitor);
 int krk_monitor_init(void);
 int krk_all_monitors_destroy(void);
@@ -25,6 +25,12 @@ int krk_monitor_remove_node(struct krk_monitor *monitor,
 		struct krk_node *node);
 void krk_monitor_enable(struct krk_monitor *monitor);
 void krk_monitor_disable(struct krk_monitor *monitor);
+struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port);
+int krk_monitor_destroy_node(struct krk_node *node);
+struct krk_node* krk_monitor_find_node(const char *addr, 
+		const unsigned short port, struct krk_monitor *monitor);
+int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
+		struct krk_node *node); 
 
 LIST_HEAD(krk_all_monitors);
 unsigned int krk_max_monitors = 0;
@@ -36,7 +42,7 @@ unsigned int krk_nr_monitors = 0;
  *
  *
  */
-struct krk_monitor* krk_monitor_find(char *name)
+struct krk_monitor* krk_monitor_find(const char *name)
 {
 	struct krk_monitor *tmp;
 	struct list_head *p, *n;
@@ -51,6 +57,25 @@ struct krk_monitor* krk_monitor_find(char *name)
 	return NULL;
 }
 
+int krk_monitor_get_all_monitors(struct krk_monitor *monitors) 
+{
+	struct krk_monitor *tmp;
+	struct list_head *p, *n;
+	int i = 0;
+
+	if (monitors == NULL) {
+		return KRK_ERROR;
+	}
+
+	list_for_each_safe(p, n, &krk_all_monitors) {
+		tmp = list_entry(p, struct krk_monitor, list);
+		memcpy(&monitors[i], tmp, sizeof(struct krk_monitor));
+		i++;
+	}
+
+	return i;
+}
+
 /**
  * krk_monitor_create - create a monitor
  * @name: name of monitor to create.
@@ -59,7 +84,7 @@ struct krk_monitor* krk_monitor_find(char *name)
  * return address of new monitor  on success;
  * NULL means failed.
  */
-struct krk_monitor* krk_monitor_create(char *name)
+struct krk_monitor* krk_monitor_create(const char *name)
 {	
 	struct krk_monitor *monitor = NULL;
 
@@ -126,20 +151,124 @@ int krk_all_monitors_destroy(void)
 	return ret;
 }
 
+struct krk_node* krk_monitor_find_node(const char *addr, 
+		const unsigned short port, struct krk_monitor *monitor)
+{
+	struct krk_node *tmp;
+	struct list_head *p, *n;
+
+	if (addr == NULL || monitor == NULL || port == 0) {
+		return NULL;
+	}
+
+	list_for_each_safe(p, n, &monitor->node_list) {
+		tmp = list_entry(p, struct krk_node, list);
+		if (!strcmp(addr, tmp->addr)
+				&& port == tmp->port) {
+			return tmp;
+		}
+	}
+
+	return NULL;
+}
+
+
+struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port)
+{
+	struct krk_node *node = NULL;
+	int ret = KRK_OK;
+
+	if (!addr || port == 0) {
+		return NULL;
+	}
+
+	node = malloc(sizeof(struct krk_node));
+	if (node == NULL) {
+		return NULL;
+	}
+
+	memset(node, 0, sizeof(struct krk_node));
+
+	if (addr[0] == '[') {
+		node->ipv6 = 1;
+	}
+
+	if (node->ipv6) {
+	} else {
+		ret = inet_aton(addr, &node->inaddr.sin_addr);
+		if (ret == 0) {
+			free(node);
+			return NULL;
+		}
+
+		node->inaddr.sin_port = htons(port);
+		node->inaddr.sin_family = AF_INET;
+	}
+
+	return node;
+}
+
+int krk_monitor_destroy_node(struct krk_node *node)
+{
+	if (node == NULL) {
+		return KRK_ERROR;
+	}
+
+	if (node->conn) {
+		krk_connection_destroy(node->conn);
+	}
+
+	free(node);
+	
+	return KRK_OK;
+}
+
 int krk_monitor_add_node(struct krk_monitor *monitor, 
 		struct krk_node *node)
 {
-	int ret = KRK_OK;
+	if (monitor == NULL
+			|| node == NULL) {
+		return KRK_ERROR;
+	}
 
-	return ret;
+	list_add_tail(&node->list, &monitor->node_list);
+	monitor->nr_nodes++;
+
+	return KRK_OK;
 }
 
-int krk_monitor_remove_node(struct krk_monitor *monitor, 
+int krk_monitor_remove_node(struct krk_monitor *monitor,
 		struct krk_node *node)
 {
-	int ret = KRK_OK;
+	if (monitor == NULL
+			|| node == NULL) {
+		return KRK_ERROR;
+	}
 
-	return ret;
+	list_del(&node->list);
+	monitor->nr_nodes--;
+
+	return KRK_OK;
+}
+
+int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
+		struct krk_node *nodes) 
+{
+	struct krk_node *tmp;
+	struct list_head *p, *n;
+	int i = 0;
+
+	if (nodes == NULL || monitor == NULL) {
+		return KRK_ERROR;
+	}
+
+	list_for_each_safe(p, n, &monitor->node_list) {
+		tmp = list_entry(p, struct krk_node, list);
+		memcpy(&nodes[i], tmp, sizeof(struct krk_node));
+		i++;
+	}
+
+	return i;
 }
 
 void krk_monitor_enable(struct krk_monitor *monitor)

@@ -76,15 +76,28 @@ static int krk_config_parse(struct krk_config *conf)
 				goto out;
 			}
 
-			monitor->interval = conf->interval;
+			monitor->threshold = conf->threshold;
+			/*TODO: initial timeout and interval*/
 			break;
 		case KRK_CONF_CMD_DESTROY:
 			ret = krk_monitor_destroy(monitor);
 			break;
 		case KRK_CONF_CMD_ADD:
+			node = krk_monitor_create_node(conf->node, conf->port);
+			if (node == NULL) {
+				ret = KRK_ERROR;
+				goto out;
+			}
+
 			ret = krk_monitor_add_node(monitor, node);
 			break;
 		case KRK_CONF_CMD_REMOVE:
+			node = krk_monitor_find_node(conf->node, conf->port, monitor);
+			if (node == NULL) {
+				ret = KRK_ERROR;
+				goto out;
+			}
+
 			ret = krk_monitor_remove_node(monitor, node);
 			break;
 		case KRK_CONF_CMD_ENABLE:
@@ -106,11 +119,19 @@ static int krk_config_process(struct krk_connection *conn)
 	struct krk_config *conf = NULL;
 	struct krk_event *rev = conn->rev;
 	struct krk_event *wev = conn->wev;
-	int buf_len, ret;
-	char retval[KRK_CONF_RETVAL_LEN];
+	int buf_len, ret, i, n;
+	struct krk_config_ret *retbuf;
+	char *buf;
+	struct krk_monitor* monitor = NULL;
+	struct krk_monitor* monitors = NULL;
+	struct krk_config_monitor *conf_monitor = NULL;
+	struct krk_config_node *conf_node = NULL;
+	struct krk_node *nodes = NULL;
 
-	memset(retval, 0, KRK_CONF_RETVAL_LEN);
-	*(int *)(retval + 1) = 0xcdef5abc;
+	retbuf = malloc(sizeof(struct krk_config_ret));
+	memset(retbuf, 0, sizeof(struct krk_config_ret));
+	
+	retbuf->retval = KRK_OK;
 	
 	buf_len = rev->buf->last - rev->buf->pos;
 	if (buf_len < sizeof(struct krk_config)) {
@@ -133,20 +154,135 @@ static int krk_config_process(struct krk_connection *conn)
 #ifdef KRK_DEBUG
 	krk_config_show_content(conf);
 #endif
-
+	
 	ret = krk_config_check(conf);
 	if (ret != KRK_OK) {
-		*retval = KRK_CONF_PARSE_ERROR;
+		retbuf->retval = KRK_ERROR;
 	} else {
-		ret = krk_config_parse(conf);
-		if (ret != KRK_OK) {
-			*retval = KRK_CONF_PARSE_ERROR;
+		if (conf->command == KRK_CONF_CMD_SHOW) {
+			if (conf->monitor[0]) {
+				/* buf = monitor + checker_conf + nodes */
+				monitor = krk_monitor_find(conf->monitor);
+				if (monitor == NULL) {
+					retbuf->retval = KRK_ERROR;
+					goto out;
+				}
+			
+				retbuf->data_len = sizeof(struct krk_config_monitor)
+					+ monitor->nr_nodes * sizeof(struct krk_config_node)
+					+ monitor->checker_param_len;
+
+				buf = malloc(retbuf->data_len);
+				memset(buf, 0, retbuf->data_len);
+				
+				conf_monitor = (struct krk_config_monitor *)buf;
+				
+				strcpy(conf_monitor->monitor, monitor->name);
+				conf_monitor->threshold = monitor->threshold;
+				conf_monitor->interval = monitor->interval;
+				conf_monitor->timeout = monitor->timeout;
+
+				/* TODO: copy monitor->checker->name 
+				 * to conf_monitor->checker 
+				 */
+
+				conf_monitor->checker_param_len = monitor->checker_param_len;
+				if (monitor->checker_param_len) {
+					memcpy(buf + sizeof(struct krk_config_monitor),
+							monitor->checker_param, monitor->checker_param_len);
+				}
+
+				conf_node = malloc(monitor->nr_nodes * 
+						sizeof(struct krk_config_node));
+				if (conf_node == NULL) {
+					retbuf->retval = KRK_ERROR;
+					goto out;
+				}
+	
+				nodes = malloc(monitor->nr_nodes * 
+						sizeof(struct krk_node));
+				if (nodes == NULL) {
+					retbuf->retval = KRK_ERROR;
+					goto out;
+				}
+
+				memset(conf_node, 0, monitor->nr_nodes * sizeof(struct krk_config_node));
+				memset(nodes, 0, monitor->nr_nodes * sizeof(struct krk_node));
+
+				if (monitor->nr_nodes) {
+					ret = krk_monitor_get_all_nodes(monitor, nodes);
+					if (ret < 0) {
+						retbuf->retval = KRK_ERROR;
+						goto out;
+					}
+
+					n = (ret > monitor->nr_nodes) ? monitor->nr_nodes : ret;
+
+					for (i = 0; i < n; i++) {
+						strncpy(conf_node[i].addr, nodes[i].addr, 64);
+						conf_node[i].port = nodes[i].port;
+					}
+
+					free(nodes);
+					
+					memcpy(buf + sizeof(conf_monitor) + conf_monitor->checker_param_len, 
+							conf_node, 
+							monitor->nr_nodes * sizeof(struct krk_config_node));
+
+					conf_monitor->nr_nodes = n;
+
+					free(conf_node);
+				}
+			} else {
+				monitors = malloc(sizeof(struct krk_monitor) * 64);
+				if (monitors == NULL) {
+					retbuf->retval = KRK_ERROR;
+					goto out;
+				}
+
+				ret = krk_monitor_get_all_monitors(monitors);
+				if (ret < 0) {
+					retbuf->retval = KRK_ERROR;
+					goto out;
+				}
+
+				if (ret > 0) {
+					retbuf->data_len = ret * 64;
+					buf = malloc(retbuf->data_len);
+
+					for (i = 0; i < ret; i++) {
+						strcpy(buf + i * 64, monitors[i].name);
+					}
+				}
+
+				free(monitors);
+			}
+		
+			if ((retbuf->data_len + sizeof(struct krk_config_ret))
+					> (wev->buf->end - wev->buf->last)) {
+				return KRK_ERROR;
+			}
+		} else {
+			ret = krk_config_parse(conf);
+			if (ret != KRK_OK) {
+				retbuf->retval = KRK_ERROR;
+			}
 		}
 	}
 
-	/* return value to client */
-	memcpy(wev->buf->pos, retval, sizeof(retval));
-	wev->buf->last += sizeof(retval);
+out:
+	/* add return value */
+	memcpy(wev->buf->pos, retbuf, sizeof(struct krk_config_ret));
+	wev->buf->last += sizeof(struct krk_config_ret);
+
+	/* append additional data */
+	if (retbuf->data_len) {
+		memcpy(wev->buf->last, buf, retbuf->data_len);
+		wev->buf->last += retbuf->data_len;
+		free(buf);
+	}
+
+	free(retbuf);
 
 	krk_event_set_write(conn->sock, wev);
 	krk_event_add(wev);
@@ -165,13 +301,13 @@ void krk_config_read(int sock, short type, void *arg)
 	
 	n = recv(sock, rev->buf->last, rev->buf->end - rev->buf->last, 0);
 	if (n == 0) {
-		fprintf(stderr, "read config finished\n");
+		/* fprintf(stderr, "read config finished\n"); */
 		krk_connection_destroy(conn);
 		return;
 	}
 
 	if (n < 0) {
-		fprintf(stderr, "read config error\n");
+		/* fprintf(stderr, "read config error\n"); */
 		krk_connection_destroy(conn);
 		return;
 	}

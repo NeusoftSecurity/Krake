@@ -14,6 +14,8 @@
 #include <krk_core.h>
 #include <krk_socket.h>
 #include <krk_config.h>
+#include <krk_monitor.h>
+#include <krk_checker.h>
 
 #define KRK_OPTION_ENABLE 1
 #define KRK_OPTION_DISABLE 2
@@ -25,6 +27,7 @@
 #define KRK_OPTION_THRESHOLD 8
 #define KRK_OPTION_NODE 9
 #define KRK_OPTION_PORT 10
+#define KRK_OPTION_TYPE 11
 
 
 static const struct option optlong[] = {
@@ -44,10 +47,12 @@ static const struct option optlong[] = {
 	{"threshold", 1, NULL, KRK_OPTION_THRESHOLD},
 	{"node", 1, NULL, KRK_OPTION_NODE},
 	{"port", 1, NULL, KRK_OPTION_PORT},
+	{"show", 0, NULL, 'S'},
+	{"type", 1, NULL, KRK_OPTION_TYPE},
 	{NULL, 0, NULL, 0}
 };
 
-static const char* optstring = "hvCDAR";
+static const char* optstring = "hvCDARS";
 
 static void krk_ctrl_usage(void)
 {
@@ -61,14 +66,44 @@ static void krk_ctrl_version(void)
 	printf("Krake ver: %s\n", PACKAGE_VERSION);
 }
 
+static void krk_ctrl_show_one_monitor(void *data, unsigned int len)
+{
+	struct krk_config_monitor *monitor;
+	monitor = (struct krk_config_monitor *)data;
+
+	fprintf(stderr, "Monitor Info:\n");
+	fprintf(stderr, "\tmonitor: %s\n", monitor->monitor);
+	fprintf(stderr, "\tinterval: %lu\n", monitor->interval);
+	fprintf(stderr, "\ttimeout: %lu\n",monitor->timeout);
+	fprintf(stderr, "\tthreshold: %lu\n",monitor->threshold);
+	fprintf(stderr, "\tchecker: %s\n", monitor->checker);
+	fprintf(stderr, "\tchecker_param_len: %lu\n", monitor->checker_param_len);
+	fprintf(stderr, "\tnr_nodes: %u\n", monitor->nr_nodes);
+}
+
+static void krk_ctrl_show_monitor_names(void *data, unsigned int len)
+{
+	char *name;
+	int i;
+
+	name = (char *)data;
+
+	fprintf(stderr, "Monitor List:\n");
+	for(i = 0; i < len; i++) {
+		if (*name)
+			fprintf(stderr, "\t%s\n", name);
+		name += 64;
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	int sock, ret, len;
 	int opt, quit = 0, mutex = 0, n = 0, conf_len = 0;
-	void *ptr;
+	void *ptr, *data;
 	struct sockaddr_un addr;
 	struct krk_config *config;
-	char *result;
+	struct krk_config_ret *result;
 
 	/* 
 	 * 1) handle argv
@@ -112,6 +147,15 @@ int main(int argc, char* argv[])
 			case 'D':
 				if (mutex == 0) {
 					config->command = KRK_CONF_CMD_DESTROY;
+					config->type = KRK_CONF_TYPE_MONITOR;
+					mutex = 1;
+				} else {
+					goto failed;
+				}
+				break;
+			case 'S':
+				if (mutex == 0) {
+					config->command = KRK_CONF_CMD_SHOW;
 					config->type = KRK_CONF_TYPE_MONITOR;
 					mutex = 1;
 				} else {
@@ -269,8 +313,8 @@ int main(int argc, char* argv[])
 	}
 
 	/* wait for reply from krake daemon */
-	result = malloc(KRK_CONF_RETVAL_LEN);
-	len = KRK_CONF_RETVAL_LEN;
+	result = malloc(sizeof(struct krk_config_ret));
+	len = sizeof(struct krk_config_ret);
 	ptr = result;
 
 	while (1) {
@@ -288,21 +332,40 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	/**
-	 * the last 4 bytes of result is a number 
-	 * to check if result is completly received.
-	 * '0xcdef5adc' means the notes in C major, 
-	 * 5 means G.
-	 */
-	if (*((int *)(result + 1)) != 0xcdef5abc) {
-		fprintf(stderr, "result is not trustable\n");
-	} else {
-		fprintf(stderr, "Command OK\n");
+	if (result->retval != KRK_OK) {
+		fprintf(stderr, "Daemon parse failed\n");
+		fprintf(stderr, "result is %d\n", result->retval);
+		goto failed;
 	}
 
-	if (result[0] != KRK_CONF_PARSE_OK) {
-		fprintf(stderr, "Daemon parse failed\n");
-		goto failed;
+	if (result->data_len != 0) {
+		len = result->data_len;
+		data = malloc(len);
+
+		while (1) {
+			n = recv(sock, data, len, 0);
+			if (n < 0) {
+				perror("recv");
+				return 1;
+			}
+
+			if (n == len) {
+				break;
+			} else {
+				ptr += n;
+				len -= n;
+			}
+		}
+
+		if (config->command == KRK_CONF_CMD_SHOW) {
+			if (config->monitor[0]) {
+				krk_ctrl_show_one_monitor(data, result->data_len);
+			} else {
+				krk_ctrl_show_monitor_names(data, result->data_len);
+			}
+		}
+		
+		free(data);
 	}
 
 	close(sock);
@@ -312,6 +375,6 @@ int main(int argc, char* argv[])
 	return 0;
 
 failed:
-	fprintf(stderr, "%s: parse command line failed\n", argv[0]);
+	fprintf(stderr, "Parse command line failed\n");
 	return 1;
 }

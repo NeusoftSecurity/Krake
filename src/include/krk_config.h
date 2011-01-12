@@ -24,14 +24,30 @@ extern void krk_config_write(int sock, short type, void *arg);
 #define KRK_CONF_CMD_REMOVE 4
 #define KRK_CONF_CMD_ENABLE 5
 #define KRK_CONF_CMD_DISABLE 6
+#define KRK_CONF_CMD_SHOW 7
+#define KRK_CONF_CMD_FLUSH 8
 
 #define KRK_CONF_TYPE_MONITOR 1
 #define KRK_CONF_TYPE_NODE 2
 
-#define KRK_CONF_PARSE_OK 0
-#define KRK_CONF_PARSE_ERROR -1
-
 #define KRK_CONF_RETVAL_LEN 5
+
+struct krk_config_monitor {
+	char monitor[64];
+	unsigned long interval;
+	unsigned long timeout;
+	unsigned long threshold;
+	
+	char checker[64];
+	unsigned long checker_param_len;
+
+	unsigned int nr_nodes;
+};
+
+struct krk_config_node {
+	char addr[64]; /* only accept ip address */
+	unsigned short port;
+};
 
 struct krk_config {
 	char command;
@@ -48,10 +64,14 @@ struct krk_config {
 	unsigned long threshold;
 
 	/* args of node */
-	char node[16]; /* only accept ip address */
+	char node[64]; /* only accept ip address */
 	unsigned short port;
 
 	char data[0]; /* additional data */
 };
 
+struct krk_config_ret {
+	int retval;
+	unsigned int data_len;
+};
 #endif
