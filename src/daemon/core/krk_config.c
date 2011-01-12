@@ -17,7 +17,7 @@
 #include <krk_config.h>
 #include <krk_buffer.h>
 #include <krk_monitor.h>
-#include <krk_checker.h>
+#include <checkers/krk_checker.h>
 
 void krk_config_read(int sock, short type, void *arg);
 void krk_config_write(int sock, short type, void *arg);
@@ -219,18 +219,22 @@ static int krk_config_process(struct krk_connection *conn)
 					n = (ret > monitor->nr_nodes) ? monitor->nr_nodes : ret;
 
 					for (i = 0; i < n; i++) {
-						strncpy(conf_node[i].addr, nodes[i].addr, 64);
+						strcpy(conf_node[i].addr, nodes[i].addr);
 						conf_node[i].port = nodes[i].port;
 					}
 
 					free(nodes);
 					
-					memcpy(buf + sizeof(conf_monitor) + conf_monitor->checker_param_len, 
+					memcpy(buf + sizeof(struct krk_config_monitor) + 
+							conf_monitor->checker_param_len, 
 							conf_node, 
 							monitor->nr_nodes * sizeof(struct krk_config_node));
 
 					conf_monitor->nr_nodes = n;
-
+#if 0
+					fprintf(stderr, "conf_node[0].addr: %s, port: %u\n",
+							conf_node[0].addr, conf_node[0].port);
+#endif
 					free(conf_node);
 				}
 			} else {
@@ -274,7 +278,7 @@ out:
 	/* add return value */
 	memcpy(wev->buf->pos, retbuf, sizeof(struct krk_config_ret));
 	wev->buf->last += sizeof(struct krk_config_ret);
-
+	
 	/* append additional data */
 	if (retbuf->data_len) {
 		memcpy(wev->buf->last, buf, retbuf->data_len);

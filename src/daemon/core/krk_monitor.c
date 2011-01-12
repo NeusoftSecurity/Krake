@@ -205,6 +205,9 @@ struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port)
 		node->inaddr.sin_family = AF_INET;
 	}
 
+	strcpy(node->addr, addr);
+	node->port = port;
+
 	return node;
 }
 

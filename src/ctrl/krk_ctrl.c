@@ -15,7 +15,7 @@
 #include <krk_socket.h>
 #include <krk_config.h>
 #include <krk_monitor.h>
-#include <krk_checker.h>
+#include <checkers/krk_checker.h>
 
 #define KRK_OPTION_ENABLE 1
 #define KRK_OPTION_DISABLE 2
@@ -69,16 +69,41 @@ static void krk_ctrl_version(void)
 static void krk_ctrl_show_one_monitor(void *data, unsigned int len)
 {
 	struct krk_config_monitor *monitor;
+	struct krk_config_node *node;
+	char *checker_param;
+	int i;
+
 	monitor = (struct krk_config_monitor *)data;
 
-	fprintf(stderr, "Monitor Info:\n");
-	fprintf(stderr, "\tmonitor: %s\n", monitor->monitor);
-	fprintf(stderr, "\tinterval: %lu\n", monitor->interval);
-	fprintf(stderr, "\ttimeout: %lu\n",monitor->timeout);
-	fprintf(stderr, "\tthreshold: %lu\n",monitor->threshold);
-	fprintf(stderr, "\tchecker: %s\n", monitor->checker);
-	fprintf(stderr, "\tchecker_param_len: %lu\n", monitor->checker_param_len);
-	fprintf(stderr, "\tnr_nodes: %u\n", monitor->nr_nodes);
+	fprintf(stdout, "Monitor Info:\n");
+	fprintf(stdout, "\tmonitor: %s\n", monitor->monitor);
+	fprintf(stdout, "\tinterval: %lu\n", monitor->interval);
+	fprintf(stdout, "\ttimeout: %lu\n",monitor->timeout);
+	fprintf(stdout, "\tthreshold: %lu\n",monitor->threshold);
+	fprintf(stdout, "\tchecker: %s\n", monitor->checker);
+
+	if (monitor->checker_param_len) {
+		checker_param = malloc(monitor->checker_param_len + 1);
+		if (checker_param == NULL) {
+			fprintf(stdout, "Out of memory\n");
+			return;
+		}
+
+		snprintf(checker_param, monitor->checker_param_len, "%s", 
+				(char *)(data + sizeof(struct krk_config_monitor)));
+		fprintf(stdout, "\t\tchecker_param: %s\n", checker_param);
+	}
+
+	fprintf(stdout, "\tnr_nodes: %u\n", monitor->nr_nodes);
+	
+	if (monitor->nr_nodes) {
+		node = (struct krk_config_node *)(data + sizeof(struct krk_config_monitor) + 
+			monitor->checker_param_len);
+
+		for (i = 0; i < monitor->nr_nodes; i++) {
+			fprintf(stdout, "\t\tnode: %s:%u\n", node[i].addr, node[i].port);
+		}
+	}
 }
 
 static void krk_ctrl_show_monitor_names(void *data, unsigned int len)
@@ -88,7 +113,7 @@ static void krk_ctrl_show_monitor_names(void *data, unsigned int len)
 
 	name = (char *)data;
 
-	fprintf(stderr, "Monitor List:\n");
+	fprintf(stdout, "Monitor List:\n");
 	for(i = 0; i < len; i++) {
 		if (*name)
 			fprintf(stderr, "\t%s\n", name);

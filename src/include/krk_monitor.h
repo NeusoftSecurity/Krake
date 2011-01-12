@@ -22,7 +22,7 @@
 #include <krk_list.h>
 #include <krk_event.h>
 #include <krk_connection.h>
-#include <krk_checker.h>
+#include <checkers/krk_checker.h>
 
 #define KRK_MONITOR_FLAG_ENABLED 0x1
 

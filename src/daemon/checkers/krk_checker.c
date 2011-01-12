@@ -10,7 +10,7 @@
  * (at your option) any later version.
  */
 
-#include <krk_checker.h>
+#include <checkers/krk_checker.h>
 
 struct krk_checker checkers[] = {
 	{"icmp", KRK_CHECKER_ICMP},
