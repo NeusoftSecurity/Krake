@@ -37,12 +37,16 @@ struct krk_monitor {
 
 	struct krk_checker *checker;
 	void *checker_param;
-	unsigned int checker_param_len; /* size of void *checker_conf */
+	unsigned int checker_param_len; /* size of void *checker_param */
 
 	struct list_head node_list;
 	unsigned long nr_nodes;
 
-	unsigned int flags;
+	struct krk_event *tmout_ev;	
+
+	char *notify_script;
+
+	unsigned int enabled:1;
 };
 
 struct krk_node {
@@ -58,6 +62,7 @@ struct krk_node {
 	struct list_head list;
 
 	unsigned int ipv6:1;
+	unsigned int down:1;
 };
 
 extern struct krk_monitor* krk_monitor_find(const char *name);
@@ -78,5 +83,6 @@ extern struct krk_node* krk_monitor_find_node(const char *addr,
 		const unsigned short port, struct krk_monitor *monitor);
 extern int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
 		struct krk_node *node); 
+extern int krk_monitors_destroy_all_nodes(struct krk_monitor *monitor);
 
 #endif

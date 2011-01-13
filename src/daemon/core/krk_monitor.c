@@ -27,6 +27,7 @@ void krk_monitor_enable(struct krk_monitor *monitor);
 void krk_monitor_disable(struct krk_monitor *monitor);
 struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port);
 int krk_monitor_destroy_node(struct krk_node *node);
+int krk_monitors_destroy_all_nodes(struct krk_monitor *monitor);
 struct krk_node* krk_monitor_find_node(const char *addr, 
 		const unsigned short port, struct krk_monitor *monitor);
 int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
@@ -76,6 +77,19 @@ int krk_monitor_get_all_monitors(struct krk_monitor *monitors)
 	return i;
 }
 
+void krk_monitor_timeout_handler(int sock, short type, void *arg)
+{
+	struct krk_event *ev;
+	struct krk_monitor *monitor;
+
+	ev = arg;
+	monitor = ev->data;
+
+	fprintf(stderr, "monitor %s timeout\n", monitor->name);
+	
+	krk_event_add(monitor->tmout_ev);
+}
+
 /**
  * krk_monitor_create - create a monitor
  * @name: name of monitor to create.
@@ -109,6 +123,16 @@ struct krk_monitor* krk_monitor_create(const char *name)
 	memset(monitor, 0, sizeof(struct krk_monitor));
 	INIT_LIST_HEAD(&monitor->node_list);
 
+	monitor->tmout_ev = krk_event_create(0);
+	if (monitor->tmout_ev == NULL) {
+		free(monitor);
+		return NULL;
+	}
+
+	monitor->tmout_ev->data = (void *)monitor; 
+	monitor->tmout_ev->handler = krk_monitor_timeout_handler;
+	krk_event_set_timer(monitor->tmout_ev);
+
 	strcpy(monitor->name, name);
 
 	list_add_tail(&monitor->list, &krk_all_monitors);
@@ -124,8 +148,13 @@ int krk_monitor_destroy(struct krk_monitor *monitor)
 		return KRK_ERROR;
 	}
 
-	/*TODO: destroy node_list */
+	krk_event_destroy(monitor->tmout_ev);
 
+	if (krk_monitors_destroy_all_nodes(monitor)
+			!= KRK_OK) {
+		return KRK_ERROR;
+	}
+	
 	list_del(&monitor->list);
 	
 	free(monitor);
@@ -171,7 +200,6 @@ struct krk_node* krk_monitor_find_node(const char *addr,
 
 	return NULL;
 }
-
 
 struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port)
 {
@@ -226,6 +254,22 @@ int krk_monitor_destroy_node(struct krk_node *node)
 	return KRK_OK;
 }
 
+int krk_monitors_destroy_all_nodes(struct krk_monitor *monitor)
+{
+	struct list_head *p, *n;
+	struct krk_node *tmp;
+	int ret = KRK_OK;
+
+	list_for_each_safe(p, n, &monitor->node_list) {
+		tmp = list_entry(p, struct krk_node, list);
+		if (krk_monitor_destroy_node(tmp)) {
+			ret = KRK_ERROR;
+		}
+	}
+
+	return ret;
+}
+
 int krk_monitor_add_node(struct krk_monitor *monitor, 
 		struct krk_node *node)
 {
@@ -276,12 +320,27 @@ int krk_monitor_get_all_nodes(struct krk_monitor *monitor,
 
 void krk_monitor_enable(struct krk_monitor *monitor)
 {
-	monitor->flags |= KRK_MONITOR_FLAG_ENABLED;
+	if (monitor->enabled == 0) {
+		monitor->enabled = 1;
+
+		monitor->tmout_ev->timeout = malloc(sizeof(struct timeval));
+		monitor->tmout_ev->timeout->tv_sec = monitor->interval;
+		monitor->tmout_ev->timeout->tv_usec = 0;
+
+		krk_event_add(monitor->tmout_ev);
+	}
 }
 
 void krk_monitor_disable(struct krk_monitor *monitor)
 {
-	monitor->flags &= ~KRK_MONITOR_FLAG_ENABLED;
+	if (monitor->enabled == 1) {
+		monitor->enabled = 0;
+
+		free(monitor->tmout_ev->timeout);
+		monitor->tmout_ev->timeout = NULL;
+
+		krk_event_del(monitor->tmout_ev);
+	}
 }
 
 int krk_monitor_init(void)

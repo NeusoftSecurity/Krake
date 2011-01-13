@@ -23,6 +23,7 @@ struct krk_event {
 	ev_handler handler;
 	void *conn;
 	struct krk_buffer *buf;
+	void *data;
 };
 
 
@@ -34,6 +35,7 @@ extern int krk_event_del(struct krk_event *event);
 extern struct krk_event* krk_event_create(size_t bufsz);
 extern int krk_event_destroy(struct krk_event* event);
 extern void krk_event_set(int sock, struct krk_event *event, short type);
+extern void krk_event_set_timer(struct krk_event *tmout);
 extern void krk_event_set_read(int sock, struct krk_event *event);
 extern void krk_event_set_write(int sock, struct krk_event *event);
 

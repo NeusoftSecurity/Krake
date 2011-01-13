@@ -21,6 +21,7 @@ int krk_event_del(struct krk_event *event);
 struct krk_event* krk_event_create(size_t bufsz);
 int krk_event_destroy(struct krk_event* event);
 void krk_event_set(int sock, struct krk_event *event, short type);
+void krk_event_set_timer(struct krk_event *tmout);
 void krk_event_set_read(int sock, struct krk_event *event);
 void krk_event_set_write(int sock, struct krk_event *event);
 
@@ -79,11 +80,11 @@ int krk_event_destroy(struct krk_event* event)
 	if (event->ev) {
 		free(event->ev);
 	}
-
+	
 	if (event->timeout) {
 		free(event->timeout);
 	}
-
+	
 	if (event->buf) {
 		krk_buffer_destroy(event->buf);
 	}
@@ -130,6 +131,11 @@ int krk_event_del(struct krk_event *event)
 void krk_event_set(int sock, struct krk_event *event, short type)
 {
 	event_set(event->ev, sock, type, event->handler, (void*)event);
+}
+
+void krk_event_set_timer(struct krk_event *tmout)
+{
+	evtimer_set(tmout->ev, tmout->handler, (void*)tmout);
 }
 
 void krk_event_set_read(int sock, struct krk_event *event)

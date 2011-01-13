@@ -30,14 +30,14 @@ void krk_local_accept(int listen_sock, short type, void *arg)
 			&remote_addr_size);
 	if (sock < 0) {
 		fprintf(stderr, "Fatal: accept unix socket failed\n");
-		goto re_arm;
+		goto rearm;
 	}
 
 	fcntl(sock, F_SETFL, O_NONBLOCK);
 	
 	conn = krk_connection_create("config_conn", 0, 0);
 	if (!conn) {
-		goto re_arm;
+		goto rearm;
 	}
 
 	conn->sock = sock;
@@ -47,7 +47,7 @@ void krk_local_accept(int listen_sock, short type, void *arg)
 	krk_event_set_read(sock, conn->rev);
 	krk_event_add(conn->rev);
 
-re_arm:
+rearm:
 	event = arg;
 	
 	krk_event_set_read(listen_sock, event);

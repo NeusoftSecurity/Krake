@@ -76,8 +76,9 @@ static int krk_config_parse(struct krk_config *conf)
 				goto out;
 			}
 
+			monitor->interval = conf->interval;
+			monitor->timeout = conf->timeout;
 			monitor->threshold = conf->threshold;
-			/*TODO: initial timeout and interval*/
 			break;
 		case KRK_CONF_CMD_DESTROY:
 			ret = krk_monitor_destroy(monitor);

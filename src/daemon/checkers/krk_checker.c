@@ -10,13 +10,19 @@
  * (at your option) any later version.
  */
 
+#include <krk_core.h>
+#include <krk_monitor.h>
 #include <checkers/krk_checker.h>
 
-struct krk_checker checkers[] = {
-	{"icmp", KRK_CHECKER_ICMP},
-	{"tcp", KRK_CHECKER_TCP},
-	{"http", KRK_CHECKER_HTTP},
-	{"ftp", KRK_CHECKER_FTP},
-};
 
+LIST_HEAD(krk_all_checkers);
+unsigned int krk_nr_checkers = 0;
 
+int krk_checker_register(struct krk_checker *checker)
+{
+	return KRK_OK;
+}
+
+void krk_checker_unregister(struct krk_checker *checker)
+{
+}
