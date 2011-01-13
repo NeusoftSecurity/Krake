@@ -56,8 +56,8 @@ struct krk_config {
 	/* args of monitor */
 	char monitor[64];
 	char checker[64];
-	char *checker_conf; /* point to data */
-	unsigned long checker_conf_len;
+	char *checker_param; /* point to data */
+	unsigned long checker_param_len;
 
 	unsigned long interval;
 	unsigned long timeout;

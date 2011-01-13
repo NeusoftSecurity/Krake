@@ -48,7 +48,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_krake_OBJECTS = krk_core.$(OBJEXT) krk_socket.$(OBJEXT) \
 	krk_event.$(OBJEXT) krk_connection.$(OBJEXT) \
 	krk_config.$(OBJEXT) krk_buffer.$(OBJEXT) \
-	krk_monitor.$(OBJEXT) krk_checker.$(OBJEXT)
+	krk_monitor.$(OBJEXT) krk_checker.$(OBJEXT) krk_tcp.$(OBJEXT)
 krake_OBJECTS = $(am_krake_OBJECTS)
 krake_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -152,7 +152,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 krake_SOURCES = core/krk_core.c core/krk_socket.c core/krk_event.c core/krk_connection.c \
 			  core/krk_config.c core/krk_buffer.c core/krk_monitor.c \
-			  checkers/krk_checker.c
+			  checkers/krk_checker.c checkers/krk_tcp.c
 
 all: all-am
 
@@ -243,6 +243,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_event.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_monitor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_socket.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_tcp.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -369,6 +370,20 @@ krk_checker.obj: checkers/krk_checker.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='checkers/krk_checker.c' object='krk_checker.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_checker.obj `if test -f 'checkers/krk_checker.c'; then $(CYGPATH_W) 'checkers/krk_checker.c'; else $(CYGPATH_W) '$(srcdir)/checkers/krk_checker.c'; fi`
+
+krk_tcp.o: checkers/krk_tcp.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_tcp.o -MD -MP -MF $(DEPDIR)/krk_tcp.Tpo -c -o krk_tcp.o `test -f 'checkers/krk_tcp.c' || echo '$(srcdir)/'`checkers/krk_tcp.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_tcp.Tpo $(DEPDIR)/krk_tcp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='checkers/krk_tcp.c' object='krk_tcp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_tcp.o `test -f 'checkers/krk_tcp.c' || echo '$(srcdir)/'`checkers/krk_tcp.c
+
+krk_tcp.obj: checkers/krk_tcp.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_tcp.obj -MD -MP -MF $(DEPDIR)/krk_tcp.Tpo -c -o krk_tcp.obj `if test -f 'checkers/krk_tcp.c'; then $(CYGPATH_W) 'checkers/krk_tcp.c'; else $(CYGPATH_W) '$(srcdir)/checkers/krk_tcp.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_tcp.Tpo $(DEPDIR)/krk_tcp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='checkers/krk_tcp.c' object='krk_tcp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_tcp.obj `if test -f 'checkers/krk_tcp.c'; then $(CYGPATH_W) 'checkers/krk_tcp.c'; else $(CYGPATH_W) '$(srcdir)/checkers/krk_tcp.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

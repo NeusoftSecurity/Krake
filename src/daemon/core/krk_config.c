@@ -27,8 +27,8 @@ static inline void krk_config_show_content(struct krk_config *conf)
 	fprintf(stderr, "config: \n");
 	fprintf(stderr, "\tmonitor: %s\n", conf->monitor);
 	fprintf(stderr, "\tchecker: %s\n", conf->checker);
-	fprintf(stderr, "\tchecker_conf: %s\n", conf->checker_conf);
-	fprintf(stderr, "\tchecker_conf_len: %lu\n", conf->checker_conf_len);
+	fprintf(stderr, "\tchecker_param: %s\n", conf->checker_param);
+	fprintf(stderr, "\tchecker_param_len: %lu\n", conf->checker_param_len);
 	fprintf(stderr, "\tinterval: %lu\n", conf->interval);
 	fprintf(stderr, "\ttimeout: %lu\n", conf->timeout);
 	fprintf(stderr, "\tthreshold: %lu\n", conf->threshold);
@@ -46,11 +46,41 @@ static inline void krk_config_show_content(struct krk_config *conf)
  * Finally I decide to do this check at the daemon
  * side instead of in krakectrl. This check could
  * make krake daemon more robust, although this could
- * impact the performance.
+ * impact the performance of configuration.
  */
 static int krk_config_check(struct krk_config *conf)
 {
 	int ret = KRK_OK;
+
+	switch (conf->command) {
+		case KRK_CONF_CMD_CREATE:
+			if (!conf->monitor[0]) {
+				ret = KRK_ERROR;
+				break;
+			}
+
+			if (!conf->checker[0]) {
+				ret = KRK_ERROR;
+				break;
+			}
+
+			if (conf->interval == 0) {
+				conf->interval = KRK_DEFAULT_INTERVAL;
+			}
+
+			if (conf->timeout == 0) {
+				conf->timeout = KRK_DEFAULT_TIMEOUT;
+			}
+
+			if (conf->threshold == 0) {
+				conf->threshold = KRK_DEFAULT_THRESHOLD;
+			}
+			break;
+		default:
+			/* never should be here */
+			ret = KRK_ERROR;
+	};
+
 	return ret;
 }
 
@@ -59,6 +89,7 @@ static int krk_config_parse(struct krk_config *conf)
 	int ret = KRK_OK;
 	struct krk_monitor *monitor = NULL;
 	struct krk_node *node = NULL;
+	struct krk_checker *checker = NULL;
 
 	if (conf->command != KRK_CONF_CMD_CREATE) {
 		monitor = krk_monitor_find(conf->monitor);
@@ -79,6 +110,19 @@ static int krk_config_parse(struct krk_config *conf)
 			monitor->interval = conf->interval;
 			monitor->timeout = conf->timeout;
 			monitor->threshold = conf->threshold;
+
+			checker = krk_checker_find(conf->checker);
+			if (checker == NULL) {
+				ret = KRK_ERROR;
+				goto out;
+			}
+
+			monitor->checker = checker;
+			
+			if (checker->parse_param) {
+				ret = checker->parse_param(monitor, conf->checker_param, 
+						conf->checker_param_len);
+			}
 			break;
 		case KRK_CONF_CMD_DESTROY:
 			ret = krk_monitor_destroy(monitor);
@@ -112,6 +156,14 @@ static int krk_config_parse(struct krk_config *conf)
 	}
 
 out:
+	if (monitor && ret != KRK_OK) {
+		krk_monitor_destroy(monitor);
+	}
+
+	if (node && ret != KRK_OK) {
+		krk_monitor_destroy_node(node);
+	}
+
 	return ret;
 }
 
@@ -140,15 +192,15 @@ static int krk_config_process(struct krk_connection *conn)
 	}
 
 	conf = (struct krk_config*)(rev->buf->pos);
-	conf->checker_conf = conf->data;
+	conf->checker_param = conf->data;
 	
 	if (buf_len < 
-			(sizeof(struct krk_config) + conf->checker_conf_len)) {
+			(sizeof(struct krk_config) + conf->checker_param_len)) {
 		return KRK_AGAIN;
 	}
 
 	if (buf_len >
-			(sizeof(struct krk_config) + conf->checker_conf_len)) {
+			(sizeof(struct krk_config) + conf->checker_param_len)) {
 		return KRK_ERROR;
 	}
 

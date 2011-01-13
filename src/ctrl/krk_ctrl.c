@@ -124,7 +124,7 @@ static void krk_ctrl_show_monitor_names(void *data, unsigned int len)
 int main(int argc, char* argv[])
 {
 	int sock, ret, len;
-	int opt, quit = 0, mutex = 0, n = 0, conf_len = 0;
+	int opt, quit = 0, mutex = 0, n = 0, param_len = 0;
 	void *ptr, *data;
 	struct sockaddr_un addr;
 	struct krk_config *config;
@@ -242,12 +242,12 @@ int main(int argc, char* argv[])
 			case KRK_OPTION_CHECKER_CONF:
 				if (config->type == KRK_CONF_TYPE_MONITOR
 						&& config->checker[0]) {
-					conf_len = strlen(optarg) + 1;
+					param_len = strlen(optarg) + 1;
 					config = realloc(config, 
-							sizeof(struct krk_config) + conf_len);
-					config->checker_conf = config->data;
-					strcpy(config->checker_conf, optarg);
-					config->checker_conf_len = conf_len;
+							sizeof(struct krk_config) + param_len);
+					config->checker_param = config->data;
+					strcpy(config->checker_param, optarg);
+					config->checker_param_len = param_len;
 				} else {
 					goto failed;
 				}
@@ -320,7 +320,7 @@ int main(int argc, char* argv[])
 	}
 
 	ptr = config;
-	len = sizeof(struct krk_config) + conf_len;
+	len = sizeof(struct krk_config) + param_len;
 	
 	while(1) {
 		n = send(sock, ptr, len, 0);

@@ -13,4 +13,6 @@
 #ifndef __KRK_TCP_H__
 #define __KRK_TCP_H__
 
+extern struct krk_checker tcp_checker;
+
 #endif

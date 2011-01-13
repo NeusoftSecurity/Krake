@@ -13,16 +13,25 @@
 #include <krk_core.h>
 #include <krk_monitor.h>
 #include <checkers/krk_checker.h>
+#include <checkers/krk_tcp.h>
 
+struct krk_checker *krk_all_checkers[] = {
+	&tcp_checker,
+	NULL
+};
 
-LIST_HEAD(krk_all_checkers);
-unsigned int krk_nr_checkers = 0;
-
-int krk_checker_register(struct krk_checker *checker)
+struct krk_checker* krk_checker_find(char *name)
 {
-	return KRK_OK;
-}
+	int i = 0;
+	struct krk_checker **tmp;
 
-void krk_checker_unregister(struct krk_checker *checker)
-{
+	tmp = krk_all_checkers;
+
+	while (tmp[i]) {
+		if (!strcmp(name, tmp[i]->name)) {
+			return tmp[i];
+		}
+	};
+
+	return NULL;
 }

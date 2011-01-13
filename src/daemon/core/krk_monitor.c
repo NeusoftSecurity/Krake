@@ -12,6 +12,7 @@
 
 #include <krk_core.h>
 #include <krk_monitor.h>
+#include <checkers/krk_checker.h>
 
 struct krk_monitor* krk_monitor_find(const char *name);
 struct krk_monitor* krk_monitor_create(const char *name);
@@ -275,6 +276,11 @@ int krk_monitor_add_node(struct krk_monitor *monitor,
 {
 	if (monitor == NULL
 			|| node == NULL) {
+		return KRK_ERROR;
+	}
+
+	if (monitor->checker->init_node(node)
+			!= KRK_OK) {
 		return KRK_ERROR;
 	}
 
