@@ -32,6 +32,10 @@ extern void krk_config_write(int sock, short type, void *arg);
 
 #define KRK_CONF_RETVAL_LEN 5
 
+#define KRK_CONF_DEFAULT_INTERVAL 5
+#define KRK_CONF_DEFAULT_TIMEOUT 5
+#define KRK_CONF_DEFAULT_THRESHOLD 5
+
 struct krk_config_monitor {
 	char monitor[64];
 	unsigned long interval;

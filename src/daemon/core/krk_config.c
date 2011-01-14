@@ -65,15 +65,15 @@ static int krk_config_check(struct krk_config *conf)
 			}
 
 			if (conf->interval == 0) {
-				conf->interval = KRK_DEFAULT_INTERVAL;
+				conf->interval = KRK_CONF_DEFAULT_INTERVAL;
 			}
 
 			if (conf->timeout == 0) {
-				conf->timeout = KRK_DEFAULT_TIMEOUT;
+				conf->timeout = KRK_CONF_DEFAULT_TIMEOUT;
 			}
 
 			if (conf->threshold == 0) {
-				conf->threshold = KRK_DEFAULT_THRESHOLD;
+				conf->threshold = KRK_CONF_DEFAULT_THRESHOLD;
 			}
 			break;
 		default:
