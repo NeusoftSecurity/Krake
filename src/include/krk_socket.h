@@ -24,4 +24,7 @@
 extern int krk_local_socket_init(void);
 extern int krk_local_socket_exit(void);
 
+extern int krk_socket_tcp_create(int protocol);
+extern int krk_socket_close(int sock);
+
 #endif

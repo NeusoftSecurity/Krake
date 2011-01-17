@@ -76,6 +76,13 @@ static int krk_config_check(struct krk_config *conf)
 				conf->threshold = KRK_CONF_DEFAULT_THRESHOLD;
 			}
 			break;
+		case KRK_CONF_CMD_DESTROY:
+		case KRK_CONF_CMD_ADD:
+		case KRK_CONF_CMD_REMOVE:
+		case KRK_CONF_CMD_SHOW:
+		case KRK_CONF_CMD_ENABLE:
+		case KRK_CONF_CMD_DISABLE:
+			break;
 		default:
 			/* never should be here */
 			ret = KRK_ERROR;

@@ -52,6 +52,7 @@ struct krk_monitor {
 struct krk_node {
 	char addr[64];
 	unsigned int port;
+	unsigned int nr_fails;
 	struct krk_connection *conn;
 	
 	union {
@@ -60,9 +61,11 @@ struct krk_node {
 	};
 
 	struct list_head list;
+	struct krk_monitor *parent;
 
 	unsigned int ipv6:1;
 	unsigned int down:1;
+	unsigned int ready:1;
 };
 
 extern struct krk_monitor* krk_monitor_find(const char *name);

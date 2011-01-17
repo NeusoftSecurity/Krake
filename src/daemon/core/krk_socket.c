@@ -87,13 +87,6 @@ static int krk_open_local_socket(void)
 	return sock;
 }
 
-#if 0
-static int krk_close_local_socket(int local_sock)
-{
-	return close(local_sock);
-}
-#endif
-
 /**
  * krk_local_socket_init - init the cmd channel
  * @
@@ -132,4 +125,27 @@ int krk_local_socket_exit(void)
 		return -1;
 	else
 		return 0;
+}
+
+int krk_socket_tcp_create(int protocol)
+{
+	int sock;
+
+	sock = socket(AF_INET, SOCK_STREAM, protocol);
+	
+	if (sock > 0) {
+		fcntl(sock, F_SETFL, O_NONBLOCK);
+	}
+
+	return sock;
+}
+
+int krk_socket_tcp_connect(int sock)
+{
+	return KRK_OK;
+}
+
+int krk_socket_close(int sock)
+{
+	return close(sock);
 }

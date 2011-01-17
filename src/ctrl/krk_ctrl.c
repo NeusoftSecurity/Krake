@@ -37,6 +37,7 @@ static const struct option optlong[] = {
 	{"destroy", 0, NULL, 'D'},
 	{"add", 0, NULL, 'A'},
 	{"remove", 0, NULL, 'R'},
+	{"show", 0, NULL, 'S'},
 	{"enable", 0, NULL, KRK_OPTION_ENABLE},
 	{"disable", 0, NULL, KRK_OPTION_DISABLE},
 	{"checker", 1, NULL, KRK_OPTION_CHECKER},
@@ -47,7 +48,6 @@ static const struct option optlong[] = {
 	{"threshold", 1, NULL, KRK_OPTION_THRESHOLD},
 	{"node", 1, NULL, KRK_OPTION_NODE},
 	{"port", 1, NULL, KRK_OPTION_PORT},
-	{"show", 0, NULL, 'S'},
 	{"type", 1, NULL, KRK_OPTION_TYPE},
 	{NULL, 0, NULL, 0}
 };

@@ -82,12 +82,24 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
 {
 	struct krk_event *ev;
 	struct krk_monitor *monitor;
+	struct list_head *p, *n;
+	struct krk_node *tmp;
+	int ret;
 
 	ev = arg;
 	monitor = ev->data;
-
-	fprintf(stderr, "monitor %s timeout\n", monitor->name);
 	
+	list_for_each_safe(p, n, &monitor->node_list) {
+		tmp = list_entry(p, struct krk_node, list);
+
+		if (tmp->ready) {
+			ret = monitor->checker->process_node(tmp, monitor->checker_param);
+			if (ret != KRK_ERROR) {
+				tmp->nr_fails++;
+			}
+		}
+	}
+
 	krk_event_add(monitor->tmout_ev);
 }
 
@@ -151,7 +163,7 @@ int krk_monitor_destroy(struct krk_monitor *monitor)
 
 	krk_event_destroy(monitor->tmout_ev);
 
-	if (krk_monitors_destroy_all_nodes(monitor)
+	if (krk_monitor_destroy_all_nodes(monitor)
 			!= KRK_OK) {
 		return KRK_ERROR;
 	}
@@ -255,7 +267,7 @@ int krk_monitor_destroy_node(struct krk_node *node)
 	return KRK_OK;
 }
 
-int krk_monitors_destroy_all_nodes(struct krk_monitor *monitor)
+int krk_monitor_destroy_all_nodes(struct krk_monitor *monitor)
 {
 	struct list_head *p, *n;
 	struct krk_node *tmp;
@@ -279,13 +291,15 @@ int krk_monitor_add_node(struct krk_monitor *monitor,
 		return KRK_ERROR;
 	}
 
+	node->parent = monitor;
+	
+	list_add_tail(&node->list, &monitor->node_list);
+	monitor->nr_nodes++;
+
 	if (monitor->checker->init_node(node)
 			!= KRK_OK) {
 		return KRK_ERROR;
 	}
-
-	list_add_tail(&node->list, &monitor->node_list);
-	monitor->nr_nodes++;
 
 	return KRK_OK;
 }
@@ -299,6 +313,7 @@ int krk_monitor_remove_node(struct krk_monitor *monitor,
 	}
 
 	list_del(&node->list);
+	node->parent = NULL;
 	monitor->nr_nodes--;
 
 	return KRK_OK;
