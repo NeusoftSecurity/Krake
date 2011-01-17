@@ -53,8 +53,8 @@ struct krk_node {
 	char addr[64];
 	unsigned int port;
 	unsigned int nr_fails;
-	struct krk_connection *conn;
-	
+	//struct krk_connection *conn;
+
 	union {
 		struct sockaddr_in inaddr;
 		struct sockaddr_in6 in6addr;
@@ -87,5 +87,7 @@ extern struct krk_node* krk_monitor_find_node(const char *addr,
 extern int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
 		struct krk_node *node); 
 extern int krk_monitors_destroy_all_nodes(struct krk_monitor *monitor);
+extern void krk_monitor_failure_notify(struct krk_monitor *monitor, 
+		struct krk_node *node);
 
 #endif

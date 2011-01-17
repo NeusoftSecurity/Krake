@@ -44,52 +44,33 @@ static void tcp_read_handler(int sock, short type, void *arg)
 static void tcp_write_handler(int sock, short type, void *arg)
 {
 	struct krk_event *wev;
+	struct krk_connection *conn;
+	struct krk_node *node;
+	struct krk_monitor *monitor;
 
 	wev = arg;
+	node = wev->data;
+	conn = wev->conn;
+	monitor = node->parent;
 
-	fprintf(stderr, "write ok!\n");
+	if (type == EV_WRITE) {
+		fprintf(stderr, "write ok! node: %s\n", node->addr);
+	} else {
+		fprintf(stderr, "write timeout! node: %s\n", node->addr);
+		node->nr_fails++;
+		if (node->nr_fails == monitor->threshold) {
+			node->nr_fails = 0;
+			krk_monitor_failure_notify(monitor, node);
+		}
+	}
+	
+	krk_connection_destroy(conn);
 }
 
 static int tcp_init_node(struct krk_node *node)
 {
-	/**
-	 * 1. create socket;
-	 * 2. create connection;
-	 * 3. set events;
-	 */
-
-	int sock;
-	struct krk_connection *conn;
-	struct krk_monitor *monitor;
-
-	sock = krk_socket_tcp_create(0);
-	if (sock < 0) {
-		return KRK_ERROR;
-	}
-
-	node->conn = krk_connection_create(node->addr, 0, 0);
-	if (!node->conn) {
-		return KRK_ERROR;
-	}
-
-	conn = node->conn;
-	conn->sock = sock;
-	conn->rev->handler = tcp_read_handler;
-	conn->wev->handler = tcp_write_handler;
-
-	monitor = node->parent;
-
-	conn->wev->timeout = malloc(sizeof(struct timeval));
-	if (!conn->wev->timeout) {
-		krk_connection_destroy(node->conn);
-		return KRK_ERROR;
-	}
-
+	fprintf(stderr, "tcp init node, node: %s\n", node->addr);
 	node->ready = 1;
-
-	conn->wev->timeout->tv_sec = monitor->timeout;
-	fprintf(stderr, "tcp init node, tmout %lu\n", monitor->timeout);
-	krk_event_set_write(conn->sock, conn->wev);
 
 	return KRK_OK;
 }
@@ -97,7 +78,59 @@ static int tcp_init_node(struct krk_node *node)
 static int tcp_process_node(struct krk_node *node, void *param)
 {
 	fprintf(stderr, "tcp process node, addr %s\n", node->addr);
+
+	int sock, ret;
+	struct krk_connection *conn;
+	struct krk_monitor *monitor;
+	
+	sock = krk_socket_tcp_create(0);
+	if (sock < 0) {
+		return KRK_ERROR;
+	}
+
+	conn = krk_connection_create(node->addr, 0, 0);
+	if (!conn) {
+		return KRK_ERROR;
+	}
+
+	conn->sock = sock;
+	conn->rev->handler = tcp_read_handler;
+	conn->wev->handler = tcp_write_handler;
+
+	conn->rev->data = node;
+	conn->wev->data = node;
+	
+	monitor = node->parent;
+
+	conn->wev->timeout = malloc(sizeof(struct timeval));
+	if (!conn->wev->timeout) {
+		krk_connection_destroy(conn);
+		return KRK_ERROR;
+	}
+
+	/** 
+	 * TODO:
+	 * connect should be changed into
+	 * common form, such as krk_socket_connect...
+	 */
+	ret = connect(conn->sock, (struct sockaddr*)&node->inaddr, 
+			sizeof(struct sockaddr));
+	if (ret < 0 && errno != EINPROGRESS) {
+		krk_connection_destroy(conn);
+		return KRK_ERROR;
+	}
+
+	if (errno == EINPROGRESS) {
+		conn->wev->timeout->tv_sec = monitor->timeout;
+		krk_event_set_write(conn->sock, conn->wev);
+		krk_event_add(conn->wev);
+		return KRK_OK;
+	}
+
+	/* ret == 0, connect ok */
+
+	krk_connection_destroy(conn);
+	
 	return KRK_OK;
 }
-
 
