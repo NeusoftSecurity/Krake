@@ -16,6 +16,24 @@ AC_ARG_ENABLE(debug, [  --enable-debug          enable debugging options],
 			fi 
 			CPPFLAGS="${CPPFLAGS} -DKRK_DEBUG" ],)
 
+AC_ARG_WITH(libevent_includes,
+			[  --with-libevent-includes=DIR    libevent include directory],
+			[with_libevent_includes="$withval"],
+			[with_libevent_includes=no])
+
+AC_ARG_WITH(libevent_libraries,
+			[  --with-libevent-libraries=DIR  libevent library directory],
+			[with_libevent_libraries="$withval"],
+			[with_libevent_libraries=no])
+
+if test "$with_libevent_includes" != "no"; then
+	CPPFLAGS="${CPPFLAGS} -I${with_libevent_includes}"
+fi
+
+if test "$with_libevent_libraries" != "no"; then
+	LIBS="${LIBS} -L${with_libevent_libraries}"
+fi
+
 # Checks for libraries.
 LEVENT=""
 AC_CHECK_LIB([event], [event_dispatch], , LEVENT="no")
