@@ -44,7 +44,8 @@ struct krk_monitor {
 
 	struct krk_event *tmout_ev;	
 
-	char *notify_script;
+	char notify_script[64];
+	char notify_script_name[64];
 
 	unsigned int enabled:1;
 };
@@ -87,7 +88,7 @@ extern struct krk_node* krk_monitor_find_node(const char *addr,
 extern int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
 		struct krk_node *node); 
 extern int krk_monitors_destroy_all_nodes(struct krk_monitor *monitor);
-extern void krk_monitor_failure_notify(struct krk_monitor *monitor, 
+extern void krk_monitor_notify(struct krk_monitor *monitor, 
 		struct krk_node *node);
 
 #endif

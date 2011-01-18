@@ -143,13 +143,24 @@ static inline void krk_smooth_quit(int signo)
 		exit(0);
 }
 
+static inline void krk_child_quit(int signo)
+{
+	pid_t pid;
+	int status;
+
+	while((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+		/* do nothing */
+	}
+}
+
 static inline void krk_signals(void)
 {
 	signal(SIGINT, krk_smooth_quit);	
 	signal(SIGKILL, krk_smooth_quit);	
 	signal(SIGQUIT, krk_smooth_quit);	
 	signal(SIGTERM, krk_smooth_quit);	
-	signal(SIGSEGV, krk_smooth_quit);	
+	signal(SIGSEGV, krk_smooth_quit);
+	signal(SIGCHLD, krk_child_quit);
 }
 
 int main(int argc, char* argv[])

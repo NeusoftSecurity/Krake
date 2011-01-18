@@ -47,6 +47,7 @@ static void tcp_write_handler(int sock, short type, void *arg)
 	struct krk_connection *conn;
 	struct krk_node *node;
 	struct krk_monitor *monitor;
+	int ret, err, errlen;
 
 	wev = arg;
 	node = wev->data;
@@ -54,22 +55,40 @@ static void tcp_write_handler(int sock, short type, void *arg)
 	monitor = node->parent;
 
 	if (type == EV_WRITE) {
-		fprintf(stderr, "write ok! node: %s\n", node->addr);
-	} else {
-		fprintf(stderr, "write timeout! node: %s\n", node->addr);
-		node->nr_fails++;
-		if (node->nr_fails == monitor->threshold) {
-			node->nr_fails = 0;
-			krk_monitor_failure_notify(monitor, node);
+		/* we've got a writable signal, check sockopt */
+		errlen = sizeof(err);
+		ret = getsockopt(conn->sock, SOL_SOCKET, SO_ERROR, &err, &errlen);
+		if (ret == 0) {
+			if (err == 0) {
+				if (node->down) {
+					node->down = 0;
+					krk_monitor_notify(monitor, node);
+				}
+				goto ok;
+			} else {
+			//	fprintf(stderr, "write failed(%d)!\n", errno);
+			}
 		}
+	} else if (type == EV_TIMEOUT) {
+		//fprintf(stderr, "write timeout!\n");
 	}
 	
+	node->nr_fails++;
+	if (node->nr_fails == monitor->threshold) {
+		node->nr_fails = 0;
+		if (!node->down) {
+			node->down = 1;
+			krk_monitor_notify(monitor, node);
+		}
+	}
+
+ok:
 	krk_connection_destroy(conn);
 }
 
 static int tcp_init_node(struct krk_node *node)
 {
-	fprintf(stderr, "tcp init node, node: %s\n", node->addr);
+	//fprintf(stderr, "tcp init node, node: %s\n", node->addr);
 	node->ready = 1;
 
 	return KRK_OK;
@@ -77,8 +96,6 @@ static int tcp_init_node(struct krk_node *node)
 
 static int tcp_process_node(struct krk_node *node, void *param)
 {
-	fprintf(stderr, "tcp process node, addr %s\n", node->addr);
-
 	int sock, ret;
 	struct krk_connection *conn;
 	struct krk_monitor *monitor;
@@ -122,6 +139,7 @@ static int tcp_process_node(struct krk_node *node, void *param)
 
 	if (errno == EINPROGRESS) {
 		conn->wev->timeout->tv_sec = monitor->timeout;
+		conn->wev->timeout->tv_usec = 0;
 		krk_event_set_write(conn->sock, conn->wev);
 		krk_event_add(conn->wev);
 		return KRK_OK;

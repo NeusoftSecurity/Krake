@@ -34,6 +34,7 @@ static inline void krk_config_show_content(struct krk_config *conf)
 	fprintf(stderr, "\tthreshold: %lu\n", conf->threshold);
 	fprintf(stderr, "\tnode: %s\n", conf->node);
 	fprintf(stderr, "\tport: %u\n", conf->port);
+	fprintf(stderr, "\tscript: %s\n", conf->script);
 }
 
 /**
@@ -91,6 +92,23 @@ static int krk_config_check(struct krk_config *conf)
 	return ret;
 }
 
+static int krk_config_parse_pathname(struct krk_monitor *monitor)
+{
+	char *ptr;
+	int len, i;
+
+	len = strlen(monitor->notify_script);
+	ptr = monitor->notify_script;
+
+	for (i = len; i >= 0; i--) {
+		if (ptr[i] == '/') {
+			break;
+		}
+	}
+
+	strcpy(monitor->notify_script_name, &ptr[i + 1]);
+}
+
 static int krk_config_parse(struct krk_config *conf)
 {
 	int ret = KRK_OK;
@@ -118,6 +136,14 @@ static int krk_config_parse(struct krk_config *conf)
 			monitor->timeout = conf->timeout;
 			monitor->threshold = conf->threshold;
 
+			if (conf->script[0]) {
+				strcpy(monitor->notify_script, conf->script);
+				ret = krk_config_parse_pathname(monitor);
+				if (ret != KRK_OK) {
+					goto out;
+				}
+			}
+
 			checker = krk_checker_find(conf->checker);
 			if (checker == NULL) {
 				ret = KRK_ERROR;
@@ -130,6 +156,7 @@ static int krk_config_parse(struct krk_config *conf)
 				ret = checker->parse_param(monitor, conf->checker_param, 
 						conf->checker_param_len);
 			}
+
 			break;
 		case KRK_CONF_CMD_DESTROY:
 			ret = krk_monitor_destroy(monitor);

@@ -27,7 +27,7 @@
 #define KRK_OPTION_THRESHOLD 8
 #define KRK_OPTION_NODE 9
 #define KRK_OPTION_PORT 10
-#define KRK_OPTION_TYPE 11
+#define KRK_OPTION_SCRIPT 11
 
 
 static const struct option optlong[] = {
@@ -48,7 +48,7 @@ static const struct option optlong[] = {
 	{"threshold", 1, NULL, KRK_OPTION_THRESHOLD},
 	{"node", 1, NULL, KRK_OPTION_NODE},
 	{"port", 1, NULL, KRK_OPTION_PORT},
-	{"type", 1, NULL, KRK_OPTION_TYPE},
+	{"script", 1, NULL, KRK_OPTION_SCRIPT},
 	{NULL, 0, NULL, 0}
 };
 
@@ -292,8 +292,16 @@ int main(int argc, char* argv[])
 					goto failed;
 				}
 				break;
+			case KRK_OPTION_SCRIPT:
+				if (config->type == KRK_CONF_TYPE_MONITOR) {
+					strcpy(config->script, optarg);
+				} else {
+					goto failed;
+				}
+				break;
 			default:
 				/* never could be here */
+				goto failed;
 				break;
 		}
 	}

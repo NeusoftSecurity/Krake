@@ -33,7 +33,7 @@ struct krk_node* krk_monitor_find_node(const char *addr,
 		const unsigned short port, struct krk_monitor *monitor);
 int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
 		struct krk_node *node); 
-void krk_monitor_failure_notify(struct krk_monitor *monitor, 
+void krk_monitor_notify(struct krk_monitor *monitor, 
 		struct krk_node *node);
 
 LIST_HEAD(krk_all_monitors);
@@ -41,12 +41,12 @@ unsigned int krk_max_monitors = 0;
 unsigned int krk_nr_monitors = 0;
 
 
-void krk_monitor_failure_notify(struct krk_monitor *monitor, 
+void krk_monitor_notify(struct krk_monitor *monitor, 
 		struct krk_node *node)
 {
 	pid_t notifier;
 
-	if (!monitor->notify_script) {
+	if (!monitor->notify_script[0]) {
 		fprintf(stderr, "no script found, do nothing\n");
 		return;
 	}
@@ -58,10 +58,12 @@ void krk_monitor_failure_notify(struct krk_monitor *monitor,
 	}
 
 	if (notifier == 0) {
-		/* this is child */
-		/* TODO: execv... */
+		if (execlp(monitor->notify_script, monitor->notify_script_name, 
+					monitor->name, node->addr, node->down ? "down" : "up", NULL) < 0) {
+			exit(1);
+		}
 	} else if (notifier > 0) {
-		fprintf(stderr, "pid of notifier is %d\n", notifier);
+		/* do nothing */
 	}
 }
 
@@ -121,15 +123,19 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
 
 		if (tmp->ready) {
 			ret = monitor->checker->process_node(tmp, monitor->checker_param);
-			if (ret != KRK_ERROR) {
+			if (ret != KRK_OK) {
 				tmp->nr_fails++;
-				fprintf(stderr, "node %s seems down, nr_fails: %u\n", 
-						tmp->addr, tmp->nr_fails);
 				if (tmp->nr_fails == monitor->threshold) {
 					tmp->nr_fails = 0;
-					krk_monitor_failure_notify(monitor, tmp);
+					if (!tmp->down) {
+						tmp->down = 1;
+						krk_monitor_notify(monitor, tmp);
+					}
 				}
+			} else {
 			}
+			//fprintf(stderr, "node %s seems down, nr_fails: %u\n", 
+			//		tmp->addr, tmp->nr_fails);
 		}
 	}
 

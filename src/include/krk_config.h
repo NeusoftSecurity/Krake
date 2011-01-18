@@ -62,6 +62,7 @@ struct krk_config {
 	char checker[64];
 	char *checker_param; /* point to data */
 	unsigned long checker_param_len;
+	char script[64];
 
 	unsigned long interval;
 	unsigned long timeout;
