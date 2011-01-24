@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 
+#include <krk_core.h>
 #include <krk_list.h>
 #include <krk_event.h>
 #include <krk_connection.h>
@@ -26,8 +27,10 @@
 
 #define KRK_MONITOR_FLAG_ENABLED 0x1
 
+#define KRK_MONITOR_MAX_NR 64
+
 struct krk_monitor {
-	char name[64];
+	char name[KRK_NAME_LEN];
 
 	struct list_head list;
 	
@@ -44,17 +47,16 @@ struct krk_monitor {
 
 	struct krk_event *tmout_ev;	
 
-	char notify_script[64];
-	char notify_script_name[64];
+	char notify_script[KRK_NAME_LEN];
+	char notify_script_name[KRK_NAME_LEN];
 
 	unsigned int enabled:1;
 };
 
 struct krk_node {
-	char addr[64];
+	char addr[KRK_IPADDR_LEN];
 	unsigned int port;
 	unsigned int nr_fails;
-	//struct krk_connection *conn;
 
 	union {
 		struct sockaddr_in inaddr;

@@ -185,7 +185,8 @@ struct krk_monitor* krk_monitor_create(const char *name)
 	monitor->tmout_ev->handler = krk_monitor_timeout_handler;
 	krk_event_set_timer(monitor->tmout_ev);
 
-	strcpy(monitor->name, name);
+	strncpy(monitor->name, name, KRK_NAME_LEN);
+	monitor->name[KRK_NAME_LEN - 1] = 0;
 
 	list_add_tail(&monitor->list, &krk_all_monitors);
 	
@@ -285,7 +286,9 @@ struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port)
 		node->inaddr.sin_family = AF_INET;
 	}
 
-	strcpy(node->addr, addr);
+	strncpy(node->addr, addr, KRK_IPADDR_LEN);
+	node->addr[KRK_IPADDR_LEN - 1] = 0;
+
 	node->port = port;
 
 	return node;

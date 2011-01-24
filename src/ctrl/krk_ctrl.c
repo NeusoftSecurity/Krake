@@ -117,7 +117,7 @@ static void krk_ctrl_show_monitor_names(void *data, unsigned int len)
 	for(i = 0; i < len; i++) {
 		if (*name)
 			fprintf(stderr, "\t%s\n", name);
-		name += 64;
+		name += KRK_NAME_LEN;
 	}
 }
 
@@ -226,7 +226,8 @@ int main(int argc, char* argv[])
 			case KRK_OPTION_MONITOR:
 				if (config->type == KRK_CONF_TYPE_MONITOR
 						|| config->type == KRK_CONF_TYPE_NODE) {
-					strcpy(config->monitor, optarg);
+					strncpy(config->monitor, optarg, KRK_NAME_LEN);
+					config->monitor[KRK_NAME_LEN - 1] = 0;
 				} else {
 					goto failed;
 				}
@@ -234,7 +235,8 @@ int main(int argc, char* argv[])
 			case KRK_OPTION_CHECKER:
 				if (config->type == KRK_CONF_TYPE_MONITOR
 						&& config->monitor[0]) {
-					strcpy(config->checker, optarg);
+					strncpy(config->checker, optarg, KRK_NAME_LEN);
+					config->checker[KRK_NAME_LEN - 1] = 0;
 				} else {
 					goto failed;
 				}
@@ -246,6 +248,7 @@ int main(int argc, char* argv[])
 					config = realloc(config, 
 							sizeof(struct krk_config) + param_len);
 					config->checker_param = config->data;
+					memset(config->checker_param, 0, param_len);
 					strcpy(config->checker_param, optarg);
 					config->checker_param_len = param_len;
 				} else {
@@ -279,7 +282,8 @@ int main(int argc, char* argv[])
 			case KRK_OPTION_NODE:
 				if (config->type == KRK_CONF_TYPE_NODE
 						&& config->monitor[0]) {
-					strcpy(config->node, optarg);
+					strncpy(config->node, optarg, KRK_IPADDR_LEN);
+					config->node[KRK_IPADDR_LEN - 1] = 0;
 				} else {
 					goto failed;
 				}
@@ -294,7 +298,8 @@ int main(int argc, char* argv[])
 				break;
 			case KRK_OPTION_SCRIPT:
 				if (config->type == KRK_CONF_TYPE_MONITOR) {
-					strcpy(config->script, optarg);
+					strncpy(config->script, optarg, KRK_NAME_LEN);
+					config->script[KRK_NAME_LEN - 1] = 0;
 				} else {
 					goto failed;
 				}

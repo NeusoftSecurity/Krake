@@ -69,8 +69,10 @@ struct krk_connection* krk_connection_create(const char *name, size_t rbufsz, si
 		conn->wev->conn = conn;
 	}
 
-	if (name)
-		memcpy(conn->name, name, sizeof(conn->name) - 1);
+	if (name) {
+		strncpy(conn->name, name, KRK_NAME_LEN);
+		conn->name[KRK_NAME_LEN - 1] = 0;
+	}
 
 	list_add_tail(&conn->list, &krk_all_connections);
 	

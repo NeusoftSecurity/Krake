@@ -34,4 +34,7 @@
 #define KRK_BUSY -3
 #define KRK_DONE -4
 
+#define KRK_NAME_LEN 64
+#define KRK_IPADDR_LEN 64
+
 #endif

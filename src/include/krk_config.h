@@ -13,6 +13,8 @@
 #ifndef __KRK_CONFIG_H__
 #define __KRK_CONFIG_H__
 
+#include <krk_core.h>
+
 extern void krk_config_read(int sock, short type, void *arg);
 extern void krk_config_write(int sock, short type, void *arg);
 
@@ -37,19 +39,19 @@ extern void krk_config_write(int sock, short type, void *arg);
 #define KRK_CONF_DEFAULT_THRESHOLD 5
 
 struct krk_config_monitor {
-	char monitor[64];
+	char monitor[KRK_NAME_LEN];
 	unsigned long interval;
 	unsigned long timeout;
 	unsigned long threshold;
 	
-	char checker[64];
+	char checker[KRK_NAME_LEN];
 	unsigned long checker_param_len;
 
 	unsigned int nr_nodes;
 };
 
 struct krk_config_node {
-	char addr[64]; /* only accept ip address */
+	char addr[KRK_IPADDR_LEN]; /* only accept ip address */
 	unsigned short port;
 };
 
@@ -58,18 +60,18 @@ struct krk_config {
 	char type;
 
 	/* args of monitor */
-	char monitor[64];
-	char checker[64];
+	char monitor[KRK_NAME_LEN];
+	char checker[KRK_NAME_LEN];
 	char *checker_param; /* point to data */
 	unsigned long checker_param_len;
-	char script[64];
+	char script[KRK_NAME_LEN];
 
 	unsigned long interval;
 	unsigned long timeout;
 	unsigned long threshold;
 
 	/* args of node */
-	char node[64]; /* only accept ip address */
+	char node[KRK_IPADDR_LEN]; /* only accept ip address */
 	unsigned short port;
 
 	char data[0]; /* additional data */

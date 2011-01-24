@@ -137,7 +137,8 @@ static int krk_config_parse(struct krk_config *conf)
 			monitor->threshold = conf->threshold;
 
 			if (conf->script[0]) {
-				strcpy(monitor->notify_script, conf->script);
+				strncpy(monitor->notify_script, conf->script, KRK_NAME_LEN);
+				monitor->notify_script[KRK_NAME_LEN - 1] = 0;
 				ret = krk_config_parse_pathname(monitor);
 				if (ret != KRK_OK) {
 					goto out;
@@ -306,7 +307,8 @@ static int krk_config_process(struct krk_connection *conn)
 					n = (ret > monitor->nr_nodes) ? monitor->nr_nodes : ret;
 
 					for (i = 0; i < n; i++) {
-						strcpy(conf_node[i].addr, nodes[i].addr);
+						strncpy(conf_node[i].addr, nodes[i].addr, KRK_NAME_LEN);
+						conf_node[i].addr[KRK_NAME_LEN - 1] = 0;
 						conf_node[i].port = nodes[i].port;
 					}
 
@@ -325,7 +327,7 @@ static int krk_config_process(struct krk_connection *conn)
 					free(conf_node);
 				}
 			} else {
-				monitors = malloc(sizeof(struct krk_monitor) * 64);
+				monitors = malloc(sizeof(struct krk_monitor) * KRK_MONITOR_MAX_NR);
 				if (monitors == NULL) {
 					retbuf->retval = KRK_ERROR;
 					goto out;
@@ -338,11 +340,11 @@ static int krk_config_process(struct krk_connection *conn)
 				}
 
 				if (ret > 0) {
-					retbuf->data_len = ret * 64;
+					retbuf->data_len = ret * KRK_MONITOR_MAX_NR;
 					buf = malloc(retbuf->data_len);
 
 					for (i = 0; i < ret; i++) {
-						strcpy(buf + i * 64, monitors[i].name);
+						strcpy(buf + i * KRK_NAME_LEN, monitors[i].name);
 					}
 				}
 

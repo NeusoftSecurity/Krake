@@ -13,10 +13,11 @@
 #ifndef __KRK_CONNECTION_H__
 #define __KRK_CONNECTION_H__
 
+#include <krk_core.h>
 #include <krk_list.h>
 
 struct krk_connection {
-	char name[32];
+	char name[KRK_NAME_LEN];
 
 	struct krk_event *rev;
 	struct krk_event *wev;
