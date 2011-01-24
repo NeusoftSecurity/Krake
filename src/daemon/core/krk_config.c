@@ -78,6 +78,11 @@ static int krk_config_check(struct krk_config *conf)
 			}
 			break;
 		case KRK_CONF_CMD_DESTROY:
+			if (!conf->monitor[0]) {
+				ret = KRK_ERROR;
+				break;
+			}
+			break;
 		case KRK_CONF_CMD_ADD:
 		case KRK_CONF_CMD_REMOVE:
 		case KRK_CONF_CMD_SHOW:

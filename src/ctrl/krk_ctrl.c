@@ -54,16 +54,50 @@ static const struct option optlong[] = {
 
 static const char* optstring = "hvCDARS";
 
+static void krk_ctrl_title(void)
+{
+	printf("%s, version %s\n\n", PACKAGE_NAME, PACKAGE_VERSION);
+}
+
+static void krk_ctrl_tail(void)
+{
+	printf("\nReport bugs to <%s>\n", PACKAGE_BUGREPORT);
+	printf("Krake homepage: <%s>\n", PACKAGE_URL);
+	printf("Copyright (c) 2010 Yang Yang <paulyang.inf@gmail.com>\n");
+}
+
 static void krk_ctrl_usage(void)
 {
+	krk_ctrl_title();
 	printf("Usage: krakectrl [option]\n"
-			"\t--version/-v		Show Krake version\n"
-			"\t--help/-h		Show this help\n");
+			"options:\n"
+			"\t-v, --version		show version\n"
+			"\t-h, --help		show this help\n"
+			"\t-C, --create		create a new monitor\n"
+			"\t-D, --destroy		destroy a monitor\n"
+			"\t-A, --add		add a node to a monitor\n"
+			"\t-R, --remove		remove a node from a monitor\n"
+			"\t-S, --show		show the configuration of a monitor\n"
+			"\t--enable		enable a monitor, this option starts the monitor's timer\n"
+			"\t--disable		disable a monitor, this option stops the monitor's timer\n"
+			"\t--checker		specify a checker using by a monitor, use \"help\" \n"
+			"\t         		to see the checker list\n"
+			"\t--checker-conf		checker's configuration\n"
+			"\t--monitor		name of a monitor\n"
+			"\t--interval		interval of monitor's timer in seconds\n"
+			"\t--timeout		time out value of checked host in seconds\n"
+			"\t--threshold		how many times of failures happens, marking host as down\n"
+			"\t--node		ip address of a checked host, either ipv4 or ipv6 address is valid\n"
+			"\t--port		port number of a checked host, range is 1 ~ 65535\n"
+			"\t--script		failure notification, if user specify this option, \n"
+			"\t        		when a failure of a checked host is deteceted, krake will call this script\n"
+		  );
+	krk_ctrl_tail();
 }
 
 static void krk_ctrl_version(void)
 {
-	printf("Krake ver: %s\n", PACKAGE_VERSION);
+	printf("Krake version: %s\n", PACKAGE_VERSION);
 }
 
 static void krk_ctrl_show_one_monitor(void *data, unsigned int len)
