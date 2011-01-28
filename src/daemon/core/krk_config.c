@@ -111,7 +111,8 @@ static int krk_config_parse_pathname(struct krk_monitor *monitor)
 		}
 	}
 
-	strcpy(monitor->notify_script_name, &ptr[i + 1]);
+	strncpy(monitor->notify_script_name, &ptr[i + 1], KRK_NAME_LEN);
+	monitor->notify_script_name[KRK_NAME_LEN - 1] = 0;
 
 	return KRK_OK;
 }
