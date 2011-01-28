@@ -53,6 +53,8 @@ struct krk_config_monitor {
 struct krk_config_node {
 	char addr[KRK_IPADDR_LEN]; /* only accept ip address */
 	unsigned short port;
+	
+	unsigned int down:1;
 };
 
 struct krk_config {

@@ -112,6 +112,8 @@ static int krk_config_parse_pathname(struct krk_monitor *monitor)
 	}
 
 	strcpy(monitor->notify_script_name, &ptr[i + 1]);
+
+	return KRK_OK;
 }
 
 static int krk_config_parse(struct krk_config *conf)
@@ -275,9 +277,10 @@ static int krk_config_process(struct krk_connection *conn)
 				conf_monitor->interval = monitor->interval;
 				conf_monitor->timeout = monitor->timeout;
 
-				/* TODO: copy monitor->checker->name 
-				 * to conf_monitor->checker 
-				 */
+				if (monitor->checker) {
+					strncpy(conf_monitor->checker, monitor->checker->name, KRK_NAME_LEN);
+					conf_monitor->checker[KRK_NAME_LEN - 1] = 0;
+				}
 
 				conf_monitor->checker_param_len = monitor->checker_param_len;
 				if (monitor->checker_param_len) {
@@ -315,6 +318,7 @@ static int krk_config_process(struct krk_connection *conn)
 						strncpy(conf_node[i].addr, nodes[i].addr, KRK_NAME_LEN);
 						conf_node[i].addr[KRK_NAME_LEN - 1] = 0;
 						conf_node[i].port = nodes[i].port;
+						conf_node[i].down = nodes[i].down;
 					}
 
 					free(nodes);
@@ -345,7 +349,7 @@ static int krk_config_process(struct krk_connection *conn)
 				}
 
 				if (ret > 0) {
-					retbuf->data_len = ret * KRK_MONITOR_MAX_NR;
+					retbuf->data_len = ret * KRK_NAME_LEN;
 					buf = malloc(retbuf->data_len);
 
 					for (i = 0; i < ret; i++) {

@@ -1,1 +1,3 @@
 1) I need a professional --help/--version output of the krake daemon
+2) I need make the autoconf/automake toolchain more useful.
+3) a log function to replace current fprintfs.

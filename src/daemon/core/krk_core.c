@@ -118,15 +118,14 @@ static inline int krk_create_pid_file(void)
  */
 static inline int __krk_smooth_quit(void)
 {
+	krk_local_socket_exit();
+	krk_remove_pid_file();
+	
 	krk_monitor_exit();
 
 	krk_connection_exit();
 	
-	krk_event_exit();
-
-	krk_local_socket_exit();
-	
-	return krk_remove_pid_file();
+	return krk_event_exit();
 }
 
 static inline void krk_smooth_quit(int signo)
@@ -160,6 +159,7 @@ static inline void krk_signals(void)
 	signal(SIGQUIT, krk_smooth_quit);	
 	signal(SIGTERM, krk_smooth_quit);	
 	signal(SIGSEGV, krk_smooth_quit);
+	signal(SIGBUS, krk_smooth_quit);
 	signal(SIGCHLD, krk_child_quit);
 }
 

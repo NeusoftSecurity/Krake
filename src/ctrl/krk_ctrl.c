@@ -135,7 +135,8 @@ static void krk_ctrl_show_one_monitor(void *data, unsigned int len)
 			monitor->checker_param_len);
 
 		for (i = 0; i < monitor->nr_nodes; i++) {
-			fprintf(stdout, "\t\tnode: %s:%u\n", node[i].addr, node[i].port);
+			fprintf(stdout, "\t\tnode: %s:%u %s\n", node[i].addr, node[i].port, 
+					node[i].down ? "down" : "up");
 		}
 	}
 }

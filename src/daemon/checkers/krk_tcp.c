@@ -47,7 +47,8 @@ static void tcp_write_handler(int sock, short type, void *arg)
 	struct krk_connection *conn;
 	struct krk_node *node;
 	struct krk_monitor *monitor;
-	int ret, err, errlen;
+	int ret, err;
+	socklen_t errlen;
 
 	wev = arg;
 	node = wev->data;
@@ -119,12 +120,6 @@ static int tcp_process_node(struct krk_node *node, void *param)
 	
 	monitor = node->parent;
 
-	conn->wev->timeout = malloc(sizeof(struct timeval));
-	if (!conn->wev->timeout) {
-		krk_connection_destroy(conn);
-		return KRK_ERROR;
-	}
-
 	/** 
 	 * TODO:
 	 * connect should be changed into
@@ -138,6 +133,12 @@ static int tcp_process_node(struct krk_node *node, void *param)
 	}
 
 	if (errno == EINPROGRESS) {
+		conn->wev->timeout = malloc(sizeof(struct timeval));
+		if (!conn->wev->timeout) {
+			krk_connection_destroy(conn);
+			return KRK_ERROR;
+		}
+
 		conn->wev->timeout->tv_sec = monitor->timeout;
 		conn->wev->timeout->tv_usec = 0;
 		krk_event_set_write(conn->sock, conn->wev);
