@@ -23,6 +23,7 @@ struct krk_connection {
 	struct krk_event *wev;
 
 	struct list_head list;
+	struct list_head node;
 	
 	int sock;
 };

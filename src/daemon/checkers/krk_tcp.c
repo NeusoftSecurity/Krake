@@ -84,6 +84,7 @@ static void tcp_write_handler(int sock, short type, void *arg)
 	}
 
 ok:
+	krk_monitor_remove_node_connection(node, conn);
 	krk_connection_destroy(conn);
 }
 
@@ -143,6 +144,9 @@ static int tcp_process_node(struct krk_node *node, void *param)
 		conn->wev->timeout->tv_usec = 0;
 		krk_event_set_write(conn->sock, conn->wev);
 		krk_event_add(conn->wev);
+
+		krk_monitor_add_node_connection(node, conn);
+
 		return KRK_OK;
 	}
 

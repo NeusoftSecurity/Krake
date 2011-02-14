@@ -66,6 +66,9 @@ struct krk_node {
 	struct list_head list;
 	struct krk_monitor *parent;
 
+	struct list_head connection_list;
+	unsigned long nr_connections;
+
 	unsigned int ipv6:1;
 	unsigned int down:1;
 	unsigned int ready:1;
@@ -92,5 +95,7 @@ extern int krk_monitor_get_all_nodes(struct krk_monitor *monitor,
 extern int krk_monitors_destroy_all_nodes(struct krk_monitor *monitor);
 extern void krk_monitor_notify(struct krk_monitor *monitor, 
 		struct krk_node *node);
+extern int krk_monitor_add_node_connection(struct krk_node *node, struct krk_connection *conn);
+extern int krk_monitor_remove_node_connection(struct krk_node *node, struct krk_connection *conn);
 
 #endif
