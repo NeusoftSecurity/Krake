@@ -1,0 +1,6 @@
+Changes with krake 0.10                                         15 Feb 2011
+
+	*) The first public version.
+	*) Feature: tcp ping
+	*) Feature: node failure notification
+
