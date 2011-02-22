@@ -1,3 +1,8 @@
+Changes with krake 0.11                                         22 Feb 2011
+
+	*) Feature: icmp ping
+
+
 Changes with krake 0.10                                         15 Feb 2011
 
 	*) The first public version.
