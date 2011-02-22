@@ -41,7 +41,7 @@ int krk_monitor_remove_node_connection(struct krk_node *node, struct krk_connect
 LIST_HEAD(krk_all_monitors);
 unsigned int krk_max_monitors = 0;
 unsigned int krk_nr_monitors = 0;
-
+unsigned short krk_nr_nodes = 0;
 
 void krk_monitor_notify(struct krk_monitor *monitor, 
 		struct krk_node *node)
@@ -192,6 +192,8 @@ struct krk_monitor* krk_monitor_create(const char *name)
 
 	list_add_tail(&monitor->list, &krk_all_monitors);
 	
+	monitor->id = krk_nr_monitors;
+
 	krk_nr_monitors++;
 
 	return monitor;
@@ -256,15 +258,46 @@ struct krk_node* krk_monitor_find_node(const char *addr,
 	return NULL;
 }
 
+struct krk_node* krk_monitor_find_node_by_id(const unsigned char id, 
+		struct krk_monitor *monitor)
+{
+	struct krk_node *tmp;
+	struct list_head *p, *n;
+
+	if (monitor == NULL) {
+		return NULL;
+	}
+
+	list_for_each_safe(p, n, &monitor->node_list) {
+		tmp = list_entry(p, struct krk_node, list);
+		if (id == tmp->id) {
+			return tmp;
+		}
+	}
+
+	return NULL;
+}
+
 int krk_monitor_add_node_connection(struct krk_node *node, struct krk_connection *conn)
 {
+	/**
+	 * currently we do not allow
+	 * the timeout value is less than the 
+	 * interval value, so there must be one
+	 * connect per main-timeout.
+	 */
+	
 	if (conn == NULL
 			|| node == NULL) {
 		return KRK_ERROR;
 	}
 
+#if 1
+	node->conn = conn;
+#else
 	list_add_tail(&conn->node, &node->connection_list);
 	node->nr_connections++;
+#endif
 
 	return KRK_OK;
 }
@@ -276,14 +309,27 @@ int krk_monitor_remove_node_connection(struct krk_node *node, struct krk_connect
 		return KRK_ERROR;
 	}
 
+#if 1
+	node->conn = NULL;
+#else
 	list_del(&conn->node);
 	node->nr_connections--;
+#endif
 
 	return KRK_OK;
 }
 
 void krk_monitor_destroy_node_connections(struct krk_node *node)
 {
+#if 1
+	if (node == NULL) {
+		return;
+	}
+
+	if (node->conn) {
+		krk_connection_destroy(node->conn);
+	}
+#else
 	struct krk_connection *tmp;
 	struct list_head *p, *n;
 
@@ -296,6 +342,7 @@ void krk_monitor_destroy_node_connections(struct krk_node *node)
 		krk_monitor_remove_node_connection(node, tmp);
 		krk_connection_destroy(tmp);
 	}
+#endif
 
 	return;
 }
@@ -338,6 +385,11 @@ struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port)
 	node->port = port;
 
 	INIT_LIST_HEAD(&node->connection_list);
+
+	/* id begins at 0 */
+	node->id = krk_nr_nodes;
+	
+	krk_nr_nodes++;
 	
 	return node;
 }
@@ -351,6 +403,8 @@ int krk_monitor_destroy_node(struct krk_node *node)
 	krk_monitor_destroy_node_connections(node);
 	
 	free(node);
+
+	krk_nr_nodes--;
 	
 	return KRK_OK;
 }
@@ -404,6 +458,26 @@ int krk_monitor_remove_node(struct krk_monitor *monitor,
 	node->parent = NULL;
 	monitor->nr_nodes--;
 
+	if (monitor->checker->cleanup_node(node)
+			!= KRK_OK) {
+		return KRK_ERROR;
+	}
+
+	return KRK_OK;
+}
+
+int krk_mointor_set_node_status(struct krk_monitor *monitor, 
+		unsigned char id, int status)
+{
+	struct krk_node *node;
+
+	node = krk_monitor_find_node_by_id(id, monitor);
+	if (node == NULL) {
+		return KRK_ERROR;
+	}
+
+	node->down = status;
+
 	return KRK_OK;
 }
 
@@ -427,6 +501,32 @@ int krk_monitor_get_all_nodes(struct krk_monitor *monitor,
 	return i;
 }
 
+int krk_monitor_get_nodes_by_addr(const char *addr, 
+		struct krk_node *nodes)
+{
+	struct list_head *p, *n;
+	struct list_head *k, *m;
+	struct krk_monitor *tmp;
+	struct krk_node *tmp_node;
+	int i = 0;
+
+	list_for_each_safe(p, n, &krk_all_monitors) {
+		tmp = list_entry(p, struct krk_monitor, list);
+		
+		list_for_each_safe(k, m, &tmp->node_list) {
+			tmp_node = list_entry(k, struct krk_node, list);
+			if (!strcmp(addr, tmp_node->addr)) {
+				memcpy(&nodes[i], tmp_node, sizeof(struct krk_node));
+				i++;
+				if (i > 255)
+					return i;
+			}
+		}
+	}
+
+	return i;
+}
+	
 void krk_monitor_enable(struct krk_monitor *monitor)
 {
 	if (monitor->enabled == 0) {

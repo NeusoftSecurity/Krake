@@ -31,6 +31,7 @@
 
 struct krk_monitor {
 	char name[KRK_NAME_LEN];
+	unsigned char id;
 
 	struct list_head list;
 	
@@ -57,6 +58,7 @@ struct krk_node {
 	char addr[KRK_IPADDR_LEN];
 	unsigned int port;
 	unsigned int nr_fails;
+	unsigned char id;
 
 	union {
 		struct sockaddr_in inaddr;
@@ -66,8 +68,11 @@ struct krk_node {
 	struct list_head list;
 	struct krk_monitor *parent;
 
+	struct krk_connection *conn;
 	struct list_head connection_list;
 	unsigned long nr_connections;
+
+	void *checker_data;    /* initialed in <checker>_init_node */
 
 	unsigned int ipv6:1;
 	unsigned int down:1;
@@ -97,5 +102,11 @@ extern void krk_monitor_notify(struct krk_monitor *monitor,
 		struct krk_node *node);
 extern int krk_monitor_add_node_connection(struct krk_node *node, struct krk_connection *conn);
 extern int krk_monitor_remove_node_connection(struct krk_node *node, struct krk_connection *conn);
+extern int krk_monitor_get_nodes_by_addr(const char *addr, 
+		struct krk_node *nodes);
+extern int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
+		struct krk_node *nodes);
+extern struct krk_node* krk_monitor_find_node_by_id(const unsigned char id, 
+		struct krk_monitor *monitor);
 
 #endif

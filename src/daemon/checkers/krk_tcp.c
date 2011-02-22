@@ -18,6 +18,7 @@
 static int tcp_parse_param(struct krk_monitor *monitor, 
 		char *param, unsigned int param_len);
 static int tcp_init_node(struct krk_node *node);
+static int tcp_cleanup_node(struct krk_node *node);
 static int tcp_process_node(struct krk_node *node, void *param);
 
 struct krk_checker tcp_checker = {
@@ -25,6 +26,7 @@ struct krk_checker tcp_checker = {
 	KRK_CHECKER_TCP,
 	tcp_parse_param,
 	tcp_init_node,
+	tcp_cleanup_node,
 	tcp_process_node,
 };
 
@@ -92,6 +94,14 @@ static int tcp_init_node(struct krk_node *node)
 {
 	//fprintf(stderr, "tcp init node, node: %s\n", node->addr);
 	node->ready = 1;
+
+	return KRK_OK;
+}
+
+static int tcp_cleanup_node(struct krk_node *node)
+{
+	//fprintf(stderr, "tcp init node, node: %s\n", node->addr);
+	node->ready = 0;
 
 	return KRK_OK;
 }

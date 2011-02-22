@@ -36,10 +36,13 @@ struct krk_checker {
 	int (*parse_param)(struct krk_monitor *monitor, 
 			char *param, unsigned int param_len);
 	int (*init_node)(struct krk_node *node);
+	int (*cleanup_node)(struct krk_node *node);
 	int (*process_node)(struct krk_node *node, void *param);
 };
 
 extern struct krk_checker* krk_checker_find(char *name);
+extern unsigned short krk_in_cksum(const unsigned short *addr, 
+		register int len, unsigned short csum);
 
 #endif
 

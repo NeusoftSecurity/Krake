@@ -149,3 +149,16 @@ int krk_socket_close(int sock)
 {
 	return close(sock);
 }
+
+int krk_socket_raw_create(int protocol)
+{
+	int sock;
+
+	sock = socket(AF_INET, SOCK_RAW, protocol);
+	
+	if (sock > 0) {
+		fcntl(sock, F_SETFL, O_NONBLOCK);
+	}
+
+	return sock;
+}
