@@ -60,8 +60,13 @@ void krk_monitor_notify(struct krk_monitor *monitor,
 	}
 
 	if (notifier == 0) {
+		char port[8];
+
+		memset(port, 0, 8);
+		sprintf(port, "%d", node->port);
+
 		if (execlp(monitor->notify_script, monitor->notify_script_name, 
-					monitor->name, node->addr, node->down ? "down" : "up", NULL) < 0) {
+					monitor->name, node->addr, port, node->down ? "down" : "up", NULL) < 0) {
 			exit(1);
 		}
 	} else if (notifier > 0) {
