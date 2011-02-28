@@ -224,7 +224,16 @@ static void icmp_write_handler(int sock, short type, void *arg)
 		ret = sendto(sock, packet, 8 + KRK_ICMP_DATA_LEN, 0, 
 				(struct sockaddr*)&node->inaddr, sizeof(struct sockaddr));
 		if (ret < 0) {
-			fprintf(stderr, "sendto failed, err is %d", errno);
+			node->nr_fails++;
+			if (node->nr_fails == monitor->threshold) {
+				node->nr_fails = 0;
+				if (!node->down) {
+					node->down = 1;
+					krk_monitor_notify(monitor, node);
+					icmp_handle_same_addr_node(node);
+				}
+			}
+
 			goto failed;
 		}
 
