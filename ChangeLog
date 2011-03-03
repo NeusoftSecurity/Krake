@@ -1,3 +1,10 @@
+Changes with krake 0.11.1                                       22 Feb 2011
+
+	*) Feature: add port parameter when krake calls the notification script.
+	*) Bugfix: increase the failure counts of the node when call "sendto"
+	failed.
+
+
 Changes with krake 0.11                                         22 Feb 2011
 
 	*) Feature: icmp ping
