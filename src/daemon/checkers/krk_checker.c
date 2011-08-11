@@ -15,10 +15,12 @@
 #include <checkers/krk_checker.h>
 #include <checkers/krk_tcp.h>
 #include <checkers/krk_icmp.h>
+#include <checkers/krk_http.h>
 
 struct krk_checker *krk_all_checkers[] = {
 	&tcp_checker,
 	&icmp_checker,
+	&http_checker,
 	NULL
 };
 

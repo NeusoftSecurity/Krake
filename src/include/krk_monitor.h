@@ -42,6 +42,7 @@ struct krk_monitor {
 	struct krk_checker *checker;
 	void *checker_param;
 	unsigned int checker_param_len; /* size of void *checker_param */
+	void *parsed_checker_param; /* points to checker-specific data structure */
 
 	struct list_head node_list;
 	unsigned long nr_nodes;
@@ -73,6 +74,8 @@ struct krk_node {
 	unsigned long nr_connections;
 
 	void *checker_data;    /* initialed in <checker>_init_node */
+
+	struct krk_buffer *buf;
 
 	unsigned int ipv6:1;
 	unsigned int down:1;
@@ -108,5 +111,9 @@ extern int krk_monitor_get_all_nodes(struct krk_monitor *monitor,
 		struct krk_node *nodes);
 extern struct krk_node* krk_monitor_find_node_by_id(const unsigned char id, 
 		struct krk_monitor *monitor);
+extern int krk_mointor_set_node_status(struct krk_monitor *monitor, 
+		unsigned char id, int status);
+extern int krk_monitor_get_all_monitors(struct krk_monitor *monitors);
+extern int krk_monitor_destroy_all_nodes(struct krk_monitor *monitor);
 
 #endif

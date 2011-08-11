@@ -199,7 +199,7 @@ static int krk_config_parse(struct krk_config *conf)
 	}
 
 out:
-	if (monitor && ret != KRK_OK) {
+	if (monitor && !node && ret != KRK_OK) {
 		krk_monitor_destroy(monitor);
 	}
 

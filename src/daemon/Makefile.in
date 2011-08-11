@@ -49,7 +49,7 @@ am_krake_OBJECTS = krk_core.$(OBJEXT) krk_socket.$(OBJEXT) \
 	krk_event.$(OBJEXT) krk_connection.$(OBJEXT) \
 	krk_config.$(OBJEXT) krk_buffer.$(OBJEXT) \
 	krk_monitor.$(OBJEXT) krk_checker.$(OBJEXT) krk_tcp.$(OBJEXT) \
-	krk_icmp.$(OBJEXT)
+	krk_icmp.$(OBJEXT) krk_http.$(OBJEXT)
 krake_OBJECTS = $(am_krake_OBJECTS)
 krake_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -153,7 +153,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 krake_SOURCES = core/krk_core.c core/krk_socket.c core/krk_event.c core/krk_connection.c \
 			  core/krk_config.c core/krk_buffer.c core/krk_monitor.c \
-			  checkers/krk_checker.c checkers/krk_tcp.c checkers/krk_icmp.c
+			  checkers/krk_checker.c checkers/krk_tcp.c checkers/krk_icmp.c checkers/krk_http.c
 
 all: all-am
 
@@ -242,6 +242,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_connection.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_core.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_event.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_http.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_icmp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_monitor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_socket.Po@am__quote@
@@ -400,6 +401,20 @@ krk_icmp.obj: checkers/krk_icmp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='checkers/krk_icmp.c' object='krk_icmp.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_icmp.obj `if test -f 'checkers/krk_icmp.c'; then $(CYGPATH_W) 'checkers/krk_icmp.c'; else $(CYGPATH_W) '$(srcdir)/checkers/krk_icmp.c'; fi`
+
+krk_http.o: checkers/krk_http.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_http.o -MD -MP -MF $(DEPDIR)/krk_http.Tpo -c -o krk_http.o `test -f 'checkers/krk_http.c' || echo '$(srcdir)/'`checkers/krk_http.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_http.Tpo $(DEPDIR)/krk_http.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='checkers/krk_http.c' object='krk_http.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_http.o `test -f 'checkers/krk_http.c' || echo '$(srcdir)/'`checkers/krk_http.c
+
+krk_http.obj: checkers/krk_http.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_http.obj -MD -MP -MF $(DEPDIR)/krk_http.Tpo -c -o krk_http.obj `if test -f 'checkers/krk_http.c'; then $(CYGPATH_W) 'checkers/krk_http.c'; else $(CYGPATH_W) '$(srcdir)/checkers/krk_http.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_http.Tpo $(DEPDIR)/krk_http.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='checkers/krk_http.c' object='krk_http.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_http.obj `if test -f 'checkers/krk_http.c'; then $(CYGPATH_W) 'checkers/krk_http.c'; else $(CYGPATH_W) '$(srcdir)/checkers/krk_http.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

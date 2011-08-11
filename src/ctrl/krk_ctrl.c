@@ -20,7 +20,7 @@
 #define KRK_OPTION_ENABLE 1
 #define KRK_OPTION_DISABLE 2
 #define KRK_OPTION_CHECKER 3
-#define KRK_OPTION_CHECKER_CONF 4
+#define KRK_OPTION_CHECKER_PARAM 4
 #define KRK_OPTION_MONITOR 5
 #define KRK_OPTION_INTERVAL 6
 #define KRK_OPTION_TIMEOUT 7
@@ -41,7 +41,7 @@ static const struct option optlong[] = {
 	{"enable", 0, NULL, KRK_OPTION_ENABLE},
 	{"disable", 0, NULL, KRK_OPTION_DISABLE},
 	{"checker", 1, NULL, KRK_OPTION_CHECKER},
-	{"checker-conf", 1, NULL, KRK_OPTION_CHECKER_CONF},
+	{"checker-param", 1, NULL, KRK_OPTION_CHECKER_PARAM},
 	{"monitor", 1, NULL, KRK_OPTION_MONITOR},
 	{"interval", 1, NULL, KRK_OPTION_INTERVAL},
 	{"timeout", 1, NULL, KRK_OPTION_TIMEOUT},
@@ -82,7 +82,7 @@ static void krk_ctrl_usage(void)
 			"\t--disable		disable a monitor, this option stops the monitor's timer\n"
 			"\t--checker		specify a checker using by a monitor, use \"help\" \n"
 			"\t         		to see the checker list\n"
-			"\t--checker-conf		checker's configuration\n"
+			"\t--checker-param		checker's parameters\n"
 			"\t--monitor		name of a monitor\n"
 			"\t--interval		interval of monitor's timer in seconds\n"
 			"\t--timeout		time out value of checked host in seconds\n"
@@ -276,7 +276,7 @@ int main(int argc, char* argv[])
 					goto failed;
 				}
 				break;
-			case KRK_OPTION_CHECKER_CONF:
+			case KRK_OPTION_CHECKER_PARAM:
 				if (config->type == KRK_CONF_TYPE_MONITOR
 						&& config->checker[0]) {
 					param_len = strlen(optarg) + 1;

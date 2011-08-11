@@ -218,7 +218,11 @@ int krk_monitor_destroy(struct krk_monitor *monitor)
 	}
 	
 	list_del(&monitor->list);
-	
+
+	if (monitor->parsed_checker_param) {
+		free(monitor->parsed_checker_param);
+	}
+
 	free(monitor);
 
 	krk_nr_monitors--;

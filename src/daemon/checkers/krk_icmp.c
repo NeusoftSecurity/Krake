@@ -156,6 +156,7 @@ static void icmp_read_handler(int sock, short type, void *arg)
 			return;
 		}
 	} else if (type == EV_TIMEOUT) {
+		//fprintf(stderr, "icmp checker read timeout\n");
 		node->nr_fails++;
 		if (node->nr_fails == monitor->threshold) {
 			node->nr_fails = 0;
@@ -278,7 +279,7 @@ static int icmp_init_node(struct krk_node *node)
 	/**
 	 * for icmp checker, if we have 
 	 * more than one node with the 
-	 * same address, consider it as 
+	 * same address, consider them as 
 	 * one.
 	 */
 	n = krk_monitor_get_nodes_by_addr(node->addr, nodes);
