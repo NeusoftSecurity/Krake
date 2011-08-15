@@ -19,10 +19,13 @@ struct krk_buffer {
 	char *last;
 	char *head;
 	char *end;
+
+	size_t size;
 };
 
 extern struct krk_buffer* krk_buffer_create(size_t size);
 extern void krk_buffer_destroy(struct krk_buffer *buf);
+extern struct krk_buffer* krk_buffer_resize(struct krk_buffer *buf, size_t size);
 
 #endif
 

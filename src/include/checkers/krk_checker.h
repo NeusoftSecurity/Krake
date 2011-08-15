@@ -18,6 +18,7 @@
 #include <krk_monitor.h>
 #include <krk_connection.h>
 #include <krk_socket.h>
+#include <krk_buffer.h>
 
 
 #define KRK_CHECKER_ICMP 1

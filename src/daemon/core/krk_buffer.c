@@ -40,7 +40,14 @@ struct krk_buffer* krk_buffer_create(size_t size)
 	buf->end = buf->head + size;
 	buf->pos = buf->last = buf->head;
 
+	buf->size = size;
+
 	return buf;
+}
+
+struct krk_buffer* krk_buffer_resize(struct krk_buffer *buf, size_t size)
+{
+	return NULL;
 }
 
 void krk_buffer_destroy(struct krk_buffer *buf)
