@@ -17,6 +17,8 @@
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 
+#include <krk_log.h>
+
 static int icmp_parse_param(struct krk_monitor *monitor, 
 		char *param, unsigned int param_len);
 static int icmp_init_node(struct krk_node *node);
@@ -51,8 +53,8 @@ static int icmp_match_packet(void* packet, struct krk_node *node)
 
 	monitor = node->parent;
 	
-	//fprintf(stderr, "m_id: %u, n_id: %u, m->id: %u, n->id: %u\n", 
-	//		monitor_id, node_id, monitor->id, node->id);
+	krk_log(KRK_LOG_DEBUG, "m_id: %u, n_id: %u, m->id: %u, n->id: %u\n", 
+			monitor_id, node_id, monitor->id, node->id);
 	
 	return ((monitor->id == monitor_id)
 			&& (node->id == node_id)) ? 1 : 0;
@@ -96,7 +98,7 @@ static void icmp_read_handler(int sock, short type, void *arg)
 	int ret, packlen;
 	socklen_t addrlen;
 
-	//fprintf(stderr, "read a icmp reply, type is %d\n", type);
+	krk_log(KRK_LOG_DEBUG, "read a icmp reply, type is %d\n", type);
 	rev = arg;
 	node = rev->data;
 	conn = rev->conn;
@@ -127,36 +129,36 @@ static void icmp_read_handler(int sock, short type, void *arg)
 			goto out;
 		}
 
-		//fprintf(stderr, "saddr: %x\n", ip->saddr);
+		krk_log(KRK_LOG_DEBUG, "saddr: %x\n", ip->saddr);
 		icp = packet + ip->ihl * 4;
 		/* we do not care about checksum */
-		//fprintf(stderr, "ret is %d, icp->id is %x, node->id is %x\n", 
-		//		ret, icp->un.echo.id, node->id);
+		krk_log(KRK_LOG_DEBUG, "ret is %d, icp->id is %x, node->id is %x\n", 
+				ret, icp->un.echo.id, node->id);
 		
 		if (icp->type == ICMP_ECHOREPLY) {
 			if (icmp_match_packet(icp, node)) {
-				//fprintf(stderr, "got correct icmp reply\n");
+				krk_log(KRK_LOG_DEBUG, "got correct icmp reply\n");
 				if (node->down) {
 					node->down = 0;
 					krk_monitor_notify(monitor, node);
 					icmp_handle_same_addr_node(node);
 				}
 			} else {
-				//fprintf(stderr, "id not match\n");
+				krk_log(KRK_LOG_DEBUG, "id not match\n");
 				free(packet);
 				krk_event_add(conn->rev);
 				
 				return;
 			}
 		} else {
-			//fprintf(stderr, "not match a icmp reply\n");
+			krk_log(KRK_LOG_DEBUG, "not match a icmp reply\n");
 			free(packet);
 			krk_event_add(conn->rev);
 			
 			return;
 		}
 	} else if (type == EV_TIMEOUT) {
-		//fprintf(stderr, "icmp checker read timeout\n");
+		krk_log(KRK_LOG_DEBUG, "icmp checker read timeout\n");
 		node->nr_fails++;
 		if (node->nr_fails == monitor->threshold) {
 			node->nr_fails = 0;
@@ -243,7 +245,7 @@ static void icmp_write_handler(int sock, short type, void *arg)
 		krk_event_set_read(conn->sock, conn->rev);
 		krk_event_add(conn->rev);
 	} else if (type == EV_TIMEOUT) {
-		//fprintf(stderr, "write timeout!\n");
+		krk_log(KRK_LOG_DEBUG, "write timeout!\n");
 		node->nr_fails++;
 		if (node->nr_fails == monitor->threshold) {
 			node->nr_fails = 0;

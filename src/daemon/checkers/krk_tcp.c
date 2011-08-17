@@ -14,6 +14,7 @@
 #include <checkers/krk_checker.h>
 #include <checkers/krk_tcp.h>
 
+#include <krk_log.h>
 
 static int tcp_parse_param(struct krk_monitor *monitor, 
 		char *param, unsigned int param_len);
@@ -69,11 +70,11 @@ static void tcp_write_handler(int sock, short type, void *arg)
 				}
 				goto ok;
 			} else {
-			//	fprintf(stderr, "write failed(%d)!\n", errno);
+				krk_log(KRK_LOG_DEBUG, "write failed(%d)!\n", errno);
 			}
 		}
 	} else if (type == EV_TIMEOUT) {
-		//fprintf(stderr, "write timeout!\n");
+		krk_log(KRK_LOG_DEBUG, "write timeout!\n");
 	}
 	
 	node->nr_fails++;
@@ -92,7 +93,7 @@ ok:
 
 static int tcp_init_node(struct krk_node *node)
 {
-	//fprintf(stderr, "tcp init node, node: %s\n", node->addr);
+	krk_log(KRK_LOG_DEBUG, "tcp init node, node: %s\n", node->addr);
 	node->ready = 1;
 
 	return KRK_OK;
@@ -100,7 +101,7 @@ static int tcp_init_node(struct krk_node *node)
 
 static int tcp_cleanup_node(struct krk_node *node)
 {
-	//fprintf(stderr, "tcp init node, node: %s\n", node->addr);
+	krk_log(KRK_LOG_DEBUG, "tcp cleanup node, node: %s\n", node->addr);
 	node->ready = 0;
 
 	return KRK_OK;

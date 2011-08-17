@@ -28,9 +28,11 @@ extern void krk_config_write(int sock, short type, void *arg);
 #define KRK_CONF_CMD_DISABLE 6
 #define KRK_CONF_CMD_SHOW 7
 #define KRK_CONF_CMD_FLUSH 8
+#define KRK_CONF_CMD_LOG 9
 
 #define KRK_CONF_TYPE_MONITOR 1
 #define KRK_CONF_TYPE_NODE 2
+#define KRK_CONF_TYPE_LOG 3
 
 #define KRK_CONF_RETVAL_LEN 5
 
@@ -71,6 +73,10 @@ struct krk_config {
 	unsigned long interval;
 	unsigned long timeout;
 	unsigned long threshold;
+
+	/* log */
+	char log_type[KRK_ARG_LEN];
+	char log_level[KRK_ARG_LEN];
 
 	/* args of node */
 	char node[KRK_IPADDR_LEN]; /* only accept ip address */

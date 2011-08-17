@@ -17,6 +17,8 @@
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 
+#include <krk_log.h>
+
 static int http_parse_param(struct krk_monitor *monitor, 
 		char *param, unsigned int param_len);
 static int http_init_node(struct krk_node *node);
@@ -39,21 +41,21 @@ static int http_load_response_file(struct http_checker_param *hcp)
 
 	fd = open(hcp->expected_file, O_RDONLY);
 	if (fd < 0) {
-		fprintf(stderr, "1\n");
+		krk_log(KRK_LOG_DEBUG, "%s, open fd failed\n", __func__);
 		return KRK_ERROR;
 	}
 
 	size = read(fd, hcp->expected, KRK_MAX_HTTP_EXPECTED);
 	if (size < 0) {
-		fprintf(stderr, "2\n");
+		krk_log(KRK_LOG_DEBUG, "%s, read fd failed\n", __func__);
 		return KRK_ERROR;
 	}
 
 	if (size == KRK_MAX_HTTP_EXPECTED) {
 		size = read(fd, &tmp, 1);
 		if (size != 0) {
+			krk_log(KRK_LOG_INFO, "there are more bytes left in the body, not matched\n");
 			close(fd);
-		fprintf(stderr, "3\n");
 			return KRK_ERROR;
 		}
 	}
@@ -87,15 +89,13 @@ static int http_parse_param(struct krk_monitor *monitor,
 	int i, j, stage, prev = -1;
 	struct http_checker_param *hcp;
 	char send_parsed = 0, expected_parsed = 0, expected_file_parsed = 0, failed = 0;
-
-#if KRK_DEBUG
+#if 0
 	for (i = 0; i < param_len; i++) {
-		fprintf(stderr, "%c", param[i]);
+		krk_log(KRK_LOG_DEBUG, "%c", param[i]);
 	}
 
-	fprintf(stderr, "\n");
+	krk_log(KRK_LOG_DEBUG, "\n");
 #endif
-
 	hcp = malloc(sizeof(struct http_checker_param));
 	if (hcp == NULL) {
 		return KRK_ERROR;
@@ -112,17 +112,17 @@ static int http_parse_param(struct krk_monitor *monitor,
 		}
 
 		if (param[i] == ':' && prev == -1) {
-			fprintf(stderr, "find a :\n");
+			krk_log(KRK_LOG_DEBUG, "find a :\n");
 			for (j = i; j >= 0; j--) {
 				if (param[j] == ' ') {
-					fprintf(stderr, "find a ' '\n");
+					krk_log(KRK_LOG_DEBUG, "find a ' '\n");
 					/* find a "string:" style*/
 					stage = http_parse_param_item(param, j, 1);
 					break;
 				}
 
 				if (j == 0) {
-					fprintf(stderr, "j == 0\n");
+					krk_log(KRK_LOG_DEBUG, "j == 0\n");
 					/* find a "string:" style string at the beginning */
 					stage = http_parse_param_item(param, j, 0);
 					break;
@@ -132,11 +132,11 @@ static int http_parse_param(struct krk_monitor *monitor,
 
 		if (param[i] == '\"') {
 			if (prev != -1) {
-				fprintf(stderr, "second \"\n");
+				krk_log(KRK_LOG_DEBUG, "second \"\n");
 				/* find a "string" style */
 				switch (stage) {
 					case HTTP_PARSE_SEND:
-						fprintf(stderr, "stage send\n");
+						krk_log(KRK_LOG_DEBUG, "stage send\n");
 						if ((i - prev - 1) > KRK_MAX_HTTP_SEND) {
 							break;
 						}
@@ -145,7 +145,7 @@ static int http_parse_param(struct krk_monitor *monitor,
 						send_parsed = 1;
 						break;
 					case HTTP_PARSE_EXPECTED:
-						fprintf(stderr, "stage expected\n");
+						krk_log(KRK_LOG_DEBUG, "stage expected\n");
 						if ((i - prev - 1) > KRK_MAX_HTTP_EXPECTED) {
 							break;
 						}
@@ -154,7 +154,7 @@ static int http_parse_param(struct krk_monitor *monitor,
 						expected_parsed = 1;
 						break;
 					case HTTP_PARSE_EXPECTED_FILE:
-						fprintf(stderr, "stage expected-file\n");
+						krk_log(KRK_LOG_DEBUG, "stage expected-file\n");
 						if ((i - prev - 1) > (KRK_MAX_HTTP_EXPECTED_FILE - 1)) {
 							break;
 						}
@@ -171,14 +171,14 @@ static int http_parse_param(struct krk_monitor *monitor,
 						break;
 					default:
 						/* parse failed */
-						fprintf(stderr, "no stage\n");
+						krk_log(KRK_LOG_DEBUG, "no stage\n");
 						failed = 1;
 						goto out;
 				}
 				prev = -1;
 			} else {
 				/* first " */
-				fprintf(stderr, "first \"\n");
+				krk_log(KRK_LOG_DEBUG, "first \"\n");
 				prev = i;
 			}
 		}
@@ -202,27 +202,25 @@ out:
 		hcp->expected_len = 0;
 	}
 
-#if KRK_DEBUG
+#if 0
 	for (i = 0; i < hcp->send_len; i++) {
-		fprintf(stderr, "%c", hcp->send[i]);
+		krk_log(KRK_LOG_DEBUG, "%c", hcp->send[i]);
 	}
 
-	fprintf(stderr, "\n");
+	krk_log(KRK_LOG_DEBUG, "\n");
 
 	for (i = 0; i < hcp->expected_len; i++) {
-		fprintf(stderr, "%c", hcp->expected[i]);
+		krk_log(KRK_LOG_DEBUG, "%c", hcp->expected[i]);
 	}
 
-	fprintf(stderr, "\n");
+	krk_log(KRK_LOG_DEBUG, "\n");
 
 	for (i = 0; i < hcp->expected_file_len; i++) {
-		fprintf(stderr, "%c", hcp->expected_file[i]);
+		krk_log(KRK_LOG_DEBUG, "%c", hcp->expected_file[i]);
 	}
 
-	fprintf(stderr, "\n");
-
+	krk_log(KRK_LOG_DEBUG, "\n");
 #endif
-
 	return KRK_OK;
 }
 
@@ -246,10 +244,10 @@ static int http_match_body(struct krk_node *node)
 	}
 
 	if (!memcmp(hrh->body_start, hcp->expected, hcp->expected_len)) {
-		fprintf(stderr, "expected string matched\n");
+		krk_log(KRK_LOG_INFO, "expected string matched\n");
 		return KRK_OK;
 	} else {
-		fprintf(stderr, "expected string not matched\n");
+		krk_log(KRK_LOG_INFO, "expected string not matched\n");
 		return KRK_ERROR;
 	}
 
@@ -315,7 +313,7 @@ static int http_handle_response(struct krk_node *node)
 	}
 
 	if (code_parsed) {
-		fprintf(stderr, "response code: %u\n", hrh->code);
+		krk_log(KRK_LOG_DEBUG, "response code: %u\n", hrh->code);
 		if (hrh->code != 200) {
 			return KRK_ERROR;
 		}
@@ -324,12 +322,11 @@ static int http_handle_response(struct krk_node *node)
 	}
 
 	if (body_len_parsed) {
-		fprintf(stderr, "repsonse body length: %u, buf length: %d\n", 
+		krk_log(KRK_LOG_DEBUG, "repsonse body length: %u, buf length: %d\n", 
 				hrh->body_len, (int)(buf->last - buf->head));
 		if ((buf->last - buf->head) < hrh->body_len) {
 			return KRK_AGAIN;
 		}
-		
 	} else {
 		return KRK_ERROR;
 	}
@@ -345,7 +342,7 @@ static void http_read_handler(int sock, short type, void *arg)
 	struct krk_monitor *monitor;
 	int ret;
 
-	fprintf(stderr, "read a http reply, type is %d\n", type);
+	krk_log(KRK_LOG_DEBUG, "read a http reply, type is %d\n", type);
 	rev = arg;
 	node = rev->data;
 	conn = rev->conn;
@@ -410,7 +407,7 @@ static void http_read_handler(int sock, short type, void *arg)
 		/* ret == KRK_OK, start to match the response body */
 
 		if (http_match_body(node) == KRK_OK) {
-			fprintf(stderr, "got correct http reply\n");
+			krk_log(KRK_LOG_DEBUG, "got correct http reply\n");
 			node->buf->last = node->buf->head;
 			if (node->down) {
 				node->down = 0;
@@ -496,7 +493,7 @@ static void http_write_handler(int sock, short type, void *arg)
 		krk_event_set_read(conn->sock, conn->rev);
 		krk_event_add(conn->rev);
 	} else if (type == EV_TIMEOUT) {
-		fprintf(stderr, "write timeout!\n");
+		krk_log(KRK_LOG_INFO, "write timeout!\n");
 		node->nr_fails++;
 		if (node->nr_fails == monitor->threshold) {
 			node->nr_fails = 0;

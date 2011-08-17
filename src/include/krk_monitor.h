@@ -80,6 +80,7 @@ struct krk_node {
 	unsigned int ipv6:1;
 	unsigned int down:1;
 	unsigned int ready:1;
+	unsigned int ssl:1;
 };
 
 extern struct krk_monitor* krk_monitor_find(const char *name);

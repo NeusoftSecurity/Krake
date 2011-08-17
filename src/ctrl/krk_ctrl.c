@@ -28,6 +28,9 @@
 #define KRK_OPTION_NODE 9
 #define KRK_OPTION_PORT 10
 #define KRK_OPTION_SCRIPT 11
+#define KRK_OPTION_LOG 12
+#define KRK_OPTION_LOG_TYPE 13
+#define KRK_OPTION_LOG_LEVEL 14
 
 
 static const struct option optlong[] = {
@@ -49,6 +52,9 @@ static const struct option optlong[] = {
 	{"node", 1, NULL, KRK_OPTION_NODE},
 	{"port", 1, NULL, KRK_OPTION_PORT},
 	{"script", 1, NULL, KRK_OPTION_SCRIPT},
+	{"log", 0, NULL, KRK_OPTION_LOG},
+	{"logtype", 1, NULL, KRK_OPTION_LOG_TYPE},
+	{"loglevel", 1, NULL, KRK_OPTION_LOG_LEVEL},
 	{NULL, 0, NULL, 0}
 };
 
@@ -80,6 +86,9 @@ static void krk_ctrl_usage(void)
 			"\t-S, --show		show the configuration of a monitor\n"
 			"\t--enable		enable a monitor, this option starts the monitor's timer\n"
 			"\t--disable		disable a monitor, this option stops the monitor's timer\n"
+			"\t--log			set logging attributes\n"
+			"\t--logtype		set the type of logs that krake sends, value can be file, syslog\n"
+			"\t--loglevel		set the level of logs, under which the logs will not be sent out\n"
 			"\t--checker		specify a checker using by a monitor, use \"help\" \n"
 			"\t         		to see the checker list\n"
 			"\t--checker-param		checker's parameters\n"
@@ -258,6 +267,15 @@ int main(int argc, char* argv[])
 					goto failed;
 				}
 				break;
+			case KRK_OPTION_LOG:
+				if (mutex == 0) {
+					config->command = KRK_CONF_CMD_LOG;
+					config->type = KRK_CONF_TYPE_LOG;
+					mutex = 1;
+				} else {
+					goto failed;
+				}
+				break;
 			case KRK_OPTION_MONITOR:
 				if (config->type == KRK_CONF_TYPE_MONITOR
 						|| config->type == KRK_CONF_TYPE_NODE) {
@@ -335,6 +353,22 @@ int main(int argc, char* argv[])
 				if (config->type == KRK_CONF_TYPE_MONITOR) {
 					strncpy(config->script, optarg, KRK_NAME_LEN);
 					config->script[KRK_NAME_LEN - 1] = 0;
+				} else {
+					goto failed;
+				}
+				break;
+			case KRK_OPTION_LOG_TYPE:
+				if (config->type == KRK_CONF_TYPE_LOG) {
+					strncpy(config->log_type, optarg, KRK_ARG_LEN);
+					config->log_type[KRK_ARG_LEN - 1] = 0;
+				} else {
+					goto failed;
+				}
+				break;
+			case KRK_OPTION_LOG_LEVEL:
+				if (config->type == KRK_CONF_TYPE_LOG) {
+					strncpy(config->log_level, optarg, KRK_ARG_LEN);
+					config->log_level[KRK_ARG_LEN - 1] = 0;
 				} else {
 					goto failed;
 				}

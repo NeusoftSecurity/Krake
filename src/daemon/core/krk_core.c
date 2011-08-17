@@ -18,6 +18,7 @@
 #include <krk_event.h>
 #include <krk_connection.h>
 #include <krk_monitor.h>
+#include <krk_log.h>
 
 static const struct option optlong[] = {
 	{"help", 0, NULL, 'h'},
@@ -125,14 +126,18 @@ static inline int __krk_smooth_quit(void)
 
 	krk_connection_exit();
 	
-	return krk_event_exit();
+	krk_event_exit();
+	
+	krk_log_exit();
+
+	return KRK_OK;
 }
 
 static inline void krk_smooth_quit(int signo)
 {
 	int ret;
 
-	fprintf(stderr, "Krake: caught signal %d\n", signo);
+	krk_log(KRK_LOG_NOTICE, "caught signal %d\n", signo);
 
 	ret = __krk_smooth_quit();
 
@@ -205,31 +210,37 @@ int main(int argc, char* argv[])
 	/* handle signals */
 	krk_signals();
 	
+	if (krk_log_init()) {
+		fprintf(stderr, "Fatal: init log failed\n");
+		return 1;
+	}
+
 	if (krk_connection_init()) {
-		fprintf(stderr, "Fatal: init connection failed\n");
+		krk_log(KRK_LOG_ALERT, "Fatal: init connection failed\n");
 		return 1;
 	}
 	
 	if (krk_event_init()) {
-		fprintf(stderr, "Fatal: init event failed\n");
+		krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
 		return 1;
 	}
 
 	if (krk_local_socket_init()) {
-		fprintf(stderr, "Fatal: init event failed\n");
+		krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
 		return 1;
 	}
 
 	if (krk_monitor_init()) {
-		fprintf(stderr, "Fatal: init event failed\n");
+		krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
 		return 1;
 	}
 
+	krk_log(KRK_LOG_NOTICE, "krake started\n");
 	krk_event_loop();
 
 	/* quit */
 	if (__krk_smooth_quit()) {
-		fprintf(stderr, "Fatal: smooth quit failed\n");
+		krk_log(KRK_LOG_ALERT, "Fatal: smooth quit failed\n");
 		return 1;
 	}
 	

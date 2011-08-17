@@ -16,6 +16,7 @@
 #include <krk_event.h>
 #include <krk_connection.h>
 #include <krk_config.h>
+#include <krk_log.h>
 
 void krk_local_accept(int listen_sock, short type, void *arg)
 {
@@ -29,7 +30,7 @@ void krk_local_accept(int listen_sock, short type, void *arg)
 	sock = accept(listen_sock, (struct sockaddr *)&remote_addr, 
 			&remote_addr_size);
 	if (sock < 0) {
-		fprintf(stderr, "Fatal: accept unix socket failed\n");
+		krk_log(KRK_LOG_ALERT, "Fatal: accept unix socket failed\n");
 		goto rearm;
 	}
 
@@ -61,7 +62,7 @@ static int krk_open_local_socket(void)
 
 	sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sock < 0) {
-		fprintf(stderr, "Fatal: create unix socket failed\n");
+		krk_log(KRK_LOG_ALERT, "Fatal: create unix socket failed\n");
 		return -1;
 	}
 
@@ -74,13 +75,13 @@ static int krk_open_local_socket(void)
 	
 	ret = bind(sock, (struct sockaddr*)&addr, sizeof(struct sockaddr_un));
 	if (ret < 0) {
-		fprintf(stderr, "Fatal: bind unix socket failed\n");
+		krk_log(KRK_LOG_ALERT, "Fatal: bind unix socket failed\n");
 		return -1;
 	}
 
 	ret = listen(sock, LOCAL_SOCK_BACKLOG);
 	if (ret < 0) {
-		fprintf(stderr, "Fatal: listen unix socket failed\n");
+		krk_log(KRK_LOG_ALERT, "Fatal: listen unix socket failed\n");
 		return -1;
 	}
 

@@ -17,6 +17,7 @@
 #include <krk_config.h>
 #include <krk_buffer.h>
 #include <krk_monitor.h>
+#include <krk_log.h>
 #include <checkers/krk_checker.h>
 
 void krk_config_read(int sock, short type, void *arg);
@@ -24,17 +25,17 @@ void krk_config_write(int sock, short type, void *arg);
 
 static inline void krk_config_show_content(struct krk_config *conf)
 {
-	fprintf(stderr, "config: \n");
-	fprintf(stderr, "\tmonitor: %s\n", conf->monitor);
-	fprintf(stderr, "\tchecker: %s\n", conf->checker);
-	fprintf(stderr, "\tchecker_param: %s\n", conf->checker_param);
-	fprintf(stderr, "\tchecker_param_len: %lu\n", conf->checker_param_len);
-	fprintf(stderr, "\tinterval: %lu\n", conf->interval);
-	fprintf(stderr, "\ttimeout: %lu\n", conf->timeout);
-	fprintf(stderr, "\tthreshold: %lu\n", conf->threshold);
-	fprintf(stderr, "\tnode: %s\n", conf->node);
-	fprintf(stderr, "\tport: %u\n", conf->port);
-	fprintf(stderr, "\tscript: %s\n", conf->script);
+	krk_log(KRK_LOG_DEBUG, "config: \n");
+	krk_log(KRK_LOG_DEBUG, "\tmonitor: %s\n", conf->monitor);
+	krk_log(KRK_LOG_DEBUG, "\tchecker: %s\n", conf->checker);
+	krk_log(KRK_LOG_DEBUG, "\tchecker_param: %s\n", conf->checker_param);
+	krk_log(KRK_LOG_DEBUG, "\tchecker_param_len: %lu\n", conf->checker_param_len);
+	krk_log(KRK_LOG_DEBUG, "\tinterval: %lu\n", conf->interval);
+	krk_log(KRK_LOG_DEBUG, "\ttimeout: %lu\n", conf->timeout);
+	krk_log(KRK_LOG_DEBUG, "\tthreshold: %lu\n", conf->threshold);
+	krk_log(KRK_LOG_DEBUG, "\tnode: %s\n", conf->node);
+	krk_log(KRK_LOG_DEBUG, "\tport: %u\n", conf->port);
+	krk_log(KRK_LOG_DEBUG, "\tscript: %s\n", conf->script);
 }
 
 /**
@@ -80,7 +81,6 @@ static int krk_config_check(struct krk_config *conf)
 		case KRK_CONF_CMD_DESTROY:
 			if (!conf->monitor[0]) {
 				ret = KRK_ERROR;
-				break;
 			}
 			break;
 		case KRK_CONF_CMD_ADD:
@@ -88,6 +88,11 @@ static int krk_config_check(struct krk_config *conf)
 		case KRK_CONF_CMD_SHOW:
 		case KRK_CONF_CMD_ENABLE:
 		case KRK_CONF_CMD_DISABLE:
+			break;
+		case KRK_CONF_CMD_LOG:
+			if (!conf->log_type[0] && !conf->log_level[0]) {
+				ret = KRK_ERROR;
+			}
 			break;
 		default:
 			/* never should be here */
@@ -124,7 +129,8 @@ static int krk_config_parse(struct krk_config *conf)
 	struct krk_node *node = NULL;
 	struct krk_checker *checker = NULL;
 
-	if (conf->command != KRK_CONF_CMD_CREATE) {
+	if (conf->command != KRK_CONF_CMD_CREATE
+			&& conf->command != KRK_CONF_CMD_LOG) {
 		monitor = krk_monitor_find(conf->monitor);
 		if (monitor == NULL) {
 			ret = KRK_ERROR;
@@ -194,6 +200,9 @@ static int krk_config_parse(struct krk_config *conf)
 		case KRK_CONF_CMD_DISABLE:
 			krk_monitor_disable(monitor);
 			break;
+		case KRK_CONF_CMD_LOG:
+			krk_log_set_type(conf->log_type, conf->log_level);
+			break;
 		default:
 			ret = KRK_ERROR;
 	}
@@ -247,9 +256,7 @@ static int krk_config_process(struct krk_connection *conn)
 		return KRK_ERROR;
 	}
 
-#ifdef KRK_DEBUG
 	krk_config_show_content(conf);
-#endif
 	
 	ret = krk_config_check(conf);
 	if (ret != KRK_OK) {
@@ -330,10 +337,10 @@ static int krk_config_process(struct krk_connection *conn)
 							monitor->nr_nodes * sizeof(struct krk_config_node));
 
 					conf_monitor->nr_nodes = n;
-#if 0
-					fprintf(stderr, "conf_node[0].addr: %s, port: %u\n",
+					
+					krk_log(KRK_LOG_DEBUG, "conf_node[0].addr: %s, port: %u\n",
 							conf_node[0].addr, conf_node[0].port);
-#endif
+					
 					free(conf_node);
 				}
 			} else {
@@ -404,13 +411,13 @@ void krk_config_read(int sock, short type, void *arg)
 	
 	n = recv(sock, rev->buf->last, rev->buf->end - rev->buf->last, 0);
 	if (n == 0) {
-		/* fprintf(stderr, "read config finished\n"); */
+		krk_log(KRK_LOG_DEBUG, "read config finished\n"); 
 		krk_connection_destroy(conn);
 		return;
 	}
 
 	if (n < 0) {
-		/* fprintf(stderr, "read config error\n"); */
+		krk_log(KRK_LOG_ALERT, "read config error\n");
 		krk_connection_destroy(conn);
 		return;
 	}
@@ -442,7 +449,7 @@ void krk_config_write(int sock, short type, void *arg)
 	
 	n = send(sock, wev->buf->pos, wev->buf->last - wev->buf->pos, 0);
 	if (n < 0) {
-		fprintf(stderr, "write config retval error\n");
+		krk_log(KRK_LOG_ALERT, "write config retval error\n");
 		krk_connection_destroy(conn);
 		return;
 	}

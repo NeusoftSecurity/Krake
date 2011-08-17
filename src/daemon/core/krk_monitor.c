@@ -13,6 +13,7 @@
 #include <krk_core.h>
 #include <krk_monitor.h>
 #include <checkers/krk_checker.h>
+#include <krk_log.h>
 
 struct krk_monitor* krk_monitor_find(const char *name);
 struct krk_monitor* krk_monitor_create(const char *name);
@@ -49,13 +50,13 @@ void krk_monitor_notify(struct krk_monitor *monitor,
 	pid_t notifier;
 
 	if (!monitor->notify_script[0]) {
-		fprintf(stderr, "no script found, do nothing\n");
+		krk_log(KRK_LOG_NOTICE, "no script found, do nothing\n");
 		return;
 	}
 
 	notifier = fork();
 	if (notifier < 0) {
-		fprintf(stderr, "fork failed\n");
+		krk_log(KRK_LOG_ALERT, "fork failed\n");
 		return;
 	}
 
@@ -141,8 +142,8 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
 				}
 			} else {
 			}
-			//fprintf(stderr, "node %s seems down, nr_fails: %u\n", 
-			//		tmp->addr, tmp->nr_fails);
+			krk_log(KRK_LOG_INFO, "node %s seems down, nr_fails: %u\n", 
+					tmp->addr, tmp->nr_fails);
 		}
 	}
 

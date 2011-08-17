@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <sys/types.h>
@@ -25,6 +26,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
 
 #define PID_FILE "/tmp/krake.pid"
 
@@ -36,5 +38,6 @@
 
 #define KRK_NAME_LEN 64
 #define KRK_IPADDR_LEN 64
+#define KRK_ARG_LEN 32
 
 #endif
