@@ -45,9 +45,35 @@ struct krk_buffer* krk_buffer_create(size_t size)
 	return buf;
 }
 
+/**
+ * krk_buffer_resize - resize a buffer's size, increment only.
+ * @buf: old buffer.
+ * @size: new size of @buf.
+ * 
+ * new buffer's pointer on success.
+ * old buffer's pointer when size <= old buffer's size.
+ * NULL on any kind of failures.
+ */
 struct krk_buffer* krk_buffer_resize(struct krk_buffer *buf, size_t size)
 {
-	return NULL;
+	struct krk_buffer *new_buf;
+
+	if (size <= buf->size) {
+		return buf;
+	}
+
+	new_buf = krk_buffer_create(size);
+	if (!new_buf) {
+		return NULL;
+	}
+
+	memcpy(new_buf->head, buf->head, buf->size);
+	new_buf->pos = buf->pos;
+	new_buf->last = buf->last;
+
+	krk_buffer_destroy(buf);
+
+	return new_buf;
 }
 
 void krk_buffer_destroy(struct krk_buffer *buf)
