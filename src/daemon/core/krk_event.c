@@ -51,7 +51,7 @@ struct krk_event* krk_event_create(size_t bufsz)
 	}
 
 	memset(event->ev, 0, sizeof(struct event));
-
+	
 	event->buf = krk_buffer_create(bufsz);
 	if (!event->buf) {
 		free(event->ev);
@@ -60,7 +60,7 @@ struct krk_event* krk_event_create(size_t bufsz)
 	}
 
 	memset(event->buf, 0, bufsz);
-	
+
 	return event;
 }
 
@@ -91,8 +91,9 @@ int krk_event_destroy(struct krk_event* event)
 	
 	if (event->buf) {
 		krk_buffer_destroy(event->buf);
+		event->buf = NULL;
 	}
-
+	
 	free(event);
 
 	return 0;

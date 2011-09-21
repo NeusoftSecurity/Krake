@@ -236,10 +236,13 @@ static int http_match_body(struct krk_node *node)
 	hcp = monitor->parsed_checker_param;
 	hrh = node->checker_data;
 
-	if (hcp->expected_len == 0)
+	if (hcp->expected_len == 0) {
+		krk_log(KRK_LOG_INFO, "expected string len is null\n");
 		return KRK_OK;
+	}
 
 	if (hcp->expected_len != hrh->body_len) {
+		krk_log(KRK_LOG_INFO, "expected string len not matched\n");
 		return KRK_ERROR;
 	}
 
@@ -348,12 +351,18 @@ static void http_read_handler(int sock, short type, void *arg)
 	conn = rev->conn;
 	monitor = node->parent;
 
+	if (!node->buf) {
+	    /*TODO: alloc buf */
+	    return;
+	}
+
+	krk_log(KRK_LOG_DEBUG, "head: %p, last: %p, end: %p\n", 
+		node->buf->head, node->buf->last, node->buf->end);
+
 	if (type == EV_READ) {
 		ret = recv(sock, node->buf->last, node->buf->end - node->buf->last, 0);
 		if (ret < 0) {
-			//if (errno == EAGAIN || errno == EWOULDBLOCK) {
-			//	krk_event_add(conn->rev);
-			//}
+			krk_log(KRK_LOG_DEBUG, "read a http reply, failed: %d\n", ret);
 			node->nr_fails++;
 			if (node->nr_fails == monitor->threshold) {
 				node->nr_fails = 0;
@@ -368,6 +377,7 @@ static void http_read_handler(int sock, short type, void *arg)
 		if (ret == 0) {
 			/* server close the connection, 
 			 * maybe we'll never be here */
+			krk_log(KRK_LOG_DEBUG, "server close connection\n");
 			goto out;
 		}
 
@@ -384,6 +394,9 @@ static void http_read_handler(int sock, short type, void *arg)
 
 		node->buf->last += ret;
 
+		krk_log(KRK_LOG_DEBUG, "after head: %p, last: %p, end: %p\n", 
+			node->buf->head, node->buf->last, node->buf->end);
+	
 		ret = http_handle_response(node);
 		if (ret == KRK_AGAIN) {
 			/* header or body not completed */
@@ -392,6 +405,7 @@ static void http_read_handler(int sock, short type, void *arg)
 		} 
 
 		if (ret == KRK_ERROR) {
+			krk_log(KRK_LOG_DEBUG, "http handle responst failed\n");
 			node->nr_fails++;
 			if (node->nr_fails == monitor->threshold) {
 				node->nr_fails = 0;
@@ -408,12 +422,12 @@ static void http_read_handler(int sock, short type, void *arg)
 
 		if (http_match_body(node) == KRK_OK) {
 			krk_log(KRK_LOG_DEBUG, "got correct http reply\n");
-			node->buf->last = node->buf->head;
 			if (node->down) {
 				node->down = 0;
 				krk_monitor_notify(monitor, node);
 			}
 		} else {
+			krk_log(KRK_LOG_DEBUG, "got incorrect http reply\n");
 			node->nr_fails++;
 			if (node->nr_fails == monitor->threshold) {
 				node->nr_fails = 0;
@@ -435,6 +449,8 @@ static void http_read_handler(int sock, short type, void *arg)
 	}
 
 out:
+	node->buf->pos = node->buf->last = node->buf->head;
+	
 	krk_monitor_remove_node_connection(node, conn);
 	krk_connection_destroy(conn);
 }
@@ -600,10 +616,6 @@ static int http_process_node(struct krk_node *node, void *param)
 		conn->wev->timeout->tv_usec = 0;
 		krk_event_set_write(conn->sock, conn->wev);
 		krk_event_add(conn->wev);
-
-		krk_monitor_add_node_connection(node, conn);
-
-		return KRK_OK;
 	}
 
 	/* ret == 0, connect ok */

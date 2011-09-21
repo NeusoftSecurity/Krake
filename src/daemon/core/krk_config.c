@@ -77,6 +77,12 @@ static int krk_config_check(struct krk_config *conf)
 			if (conf->threshold == 0) {
 				conf->threshold = KRK_CONF_DEFAULT_THRESHOLD;
 			}
+
+			/* not allow timeout >= interval */
+			if (conf->interval <= conf->timeout) {
+				ret = KRK_ERROR;
+			}
+
 			break;
 		case KRK_CONF_CMD_DESTROY:
 			if (!conf->monitor[0]) {

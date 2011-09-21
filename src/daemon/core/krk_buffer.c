@@ -13,6 +13,8 @@
 #include <krk_core.h>
 #include <krk_buffer.h>
 
+#include <krk_log.h>
+
 #define KRK_DEFAULT_BUFSZ 1024;
 
 struct krk_buffer* krk_buffer_create(size_t size);
@@ -68,11 +70,14 @@ struct krk_buffer* krk_buffer_resize(struct krk_buffer *buf, size_t size)
 	}
 
 	memcpy(new_buf->head, buf->head, buf->size);
-	new_buf->pos = buf->pos;
-	new_buf->last = buf->last;
+	new_buf->pos += (buf->pos - buf->head);
+	new_buf->last += (buf->last - buf->head);
 
+	krk_log(KRK_LOG_DEBUG, "buf resized,  old: %p, new: %p, size: %d->%d\n", 
+		buf->head, new_buf->head, buf->size, new_buf->size);
+	
 	krk_buffer_destroy(buf);
-
+	
 	return new_buf;
 }
 

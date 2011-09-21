@@ -142,8 +142,8 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
 				}
 			} else {
 			}
-			krk_log(KRK_LOG_INFO, "node %s seems down, nr_fails: %u\n", 
-					tmp->addr, tmp->nr_fails);
+			krk_log(KRK_LOG_INFO, "node %s, nr_fails: %u\n", 
+					tmp->addr, tmp->nr_fails); 
 		}
 	}
 
