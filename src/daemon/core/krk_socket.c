@@ -16,6 +16,7 @@
 #include <krk_event.h>
 #include <krk_connection.h>
 #include <krk_config.h>
+#include <krk_monitor.h>
 #include <krk_log.h>
 
 void krk_local_accept(int listen_sock, short type, void *arg)
@@ -141,11 +142,6 @@ int krk_socket_tcp_create(int protocol)
 	return sock;
 }
 
-int krk_socket_tcp_connect(int sock)
-{
-	return KRK_OK;
-}
-
 int krk_socket_close(int sock)
 {
 	return close(sock);
@@ -162,4 +158,27 @@ int krk_socket_raw_create(int protocol)
 	}
 
 	return sock;
+}
+
+int krk_socket_tcp_connect(int sock, struct krk_node *node)
+{
+	int ret;
+
+	if (node->ssl) {
+	} else {
+		ret = connect(sock, (struct sockaddr*)&node->inaddr, 
+				sizeof(struct sockaddr));
+	}
+
+	return ret;
+}
+
+int krk_socket_read(struct krk_node *node) 
+{
+	return KRK_OK;
+}
+
+int krk_socket_write(struct krk_node *node)
+{
+	return KRK_OK;
 }

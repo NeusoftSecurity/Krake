@@ -136,14 +136,15 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
 				if (tmp->nr_fails == monitor->threshold) {
 					tmp->nr_fails = 0;
 					if (!tmp->down) {
+						krk_log(KRK_LOG_DEBUG, "mark node as down\n");
 						tmp->down = 1;
 						krk_monitor_notify(monitor, tmp);
 					}
 				}
 			} else {
 			}
-			krk_log(KRK_LOG_INFO, "node %s, nr_fails: %u\n", 
-					tmp->addr, tmp->nr_fails); 
+			krk_log(KRK_LOG_INFO, "node %s:%d, nr_fails: %u\n", 
+					tmp->addr, tmp->port, tmp->nr_fails); 
 		}
 	}
 

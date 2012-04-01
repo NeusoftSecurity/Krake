@@ -34,6 +34,38 @@ struct krk_checker http_checker = {
 	http_process_node,
 };
 
+static int http_load_send_file(struct http_checker_param *hcp)
+{
+	int fd, size;
+	char tmp;
+
+	fd = open(hcp->send_file, O_RDONLY);
+	if (fd < 0) {
+		krk_log(KRK_LOG_DEBUG, "%s, open send fd failed\n", __func__);
+		return KRK_ERROR;
+	}
+
+	size = read(fd, hcp->send, KRK_MAX_HTTP_SEND);
+	if (size < 0) {
+		krk_log(KRK_LOG_DEBUG, "%s, read send fd failed\n", __func__);
+		return KRK_ERROR;
+	}
+
+	if (size == KRK_MAX_HTTP_SEND) {
+		size = read(fd, &tmp, 1);
+		if (size != 0) {
+			krk_log(KRK_LOG_INFO, "there are more bytes left in the body, not matched\n");
+			close(fd);
+			return KRK_ERROR;
+		}
+	}
+
+	hcp->send_len = size;
+
+	close(fd);
+	return KRK_OK;
+}
+
 static int http_load_response_file(struct http_checker_param *hcp)
 {
 	int fd, size;
@@ -72,6 +104,10 @@ static int http_parse_param_item(char *param, int offset, char blank)
 		return HTTP_PARSE_SEND;
 	}
 
+	if (!memcmp(param + offset + blank, "send-file:", 10)) {
+		return HTTP_PARSE_SEND_FILE;
+	}
+
 	if (!memcmp(param + offset + blank, "expected:", 9)) {
 		return HTTP_PARSE_EXPECTED;
 	}
@@ -88,7 +124,8 @@ static int http_parse_param(struct krk_monitor *monitor,
 {
 	int i, j, stage, prev = -1;
 	struct http_checker_param *hcp;
-	char send_parsed = 0, expected_parsed = 0, expected_file_parsed = 0, failed = 0;
+	char send_parsed = 0, send_file_parsed = 0;
+	char expected_parsed = 0, expected_file_parsed = 0, failed = 0;
 #if 0
 	for (i = 0; i < param_len; i++) {
 		krk_log(KRK_LOG_DEBUG, "%c", param[i]);
@@ -144,6 +181,22 @@ static int http_parse_param(struct krk_monitor *monitor,
 						memcpy(hcp->send, param + prev + 1, hcp->send_len);
 						send_parsed = 1;
 						break;
+					case HTTP_PARSE_SEND_FILE:
+						krk_log(KRK_LOG_DEBUG, "stage send file\n");
+						
+						hcp->send_file_len = i - prev - 1;
+						hcp->send_in_file = 1;
+						memcpy(hcp->send_file, param + prev + 1, hcp->send_file_len);
+						send_file_parsed = 1;
+						
+						if (http_load_send_file(hcp) != KRK_OK) {
+							failed = 1;
+							goto out;
+						}
+						
+						krk_log(KRK_LOG_DEBUG, "load send file ok\n");
+						
+						break;
 					case HTTP_PARSE_EXPECTED:
 						krk_log(KRK_LOG_DEBUG, "stage expected\n");
 						if ((i - prev - 1) > KRK_MAX_HTTP_EXPECTED) {
@@ -193,7 +246,7 @@ out:
 		return KRK_ERROR;
 	}
 
-	if (!send_parsed) {
+	if (!send_parsed && !send_file_parsed) {
 		hcp->send_len = strlen(HTTP_DEFAULT_REQUEST);
 		memcpy(hcp->send, HTTP_DEFAULT_REQUEST, hcp->send_len);
 	}
@@ -422,6 +475,7 @@ static void http_read_handler(int sock, short type, void *arg)
 
 		if (http_match_body(node) == KRK_OK) {
 			krk_log(KRK_LOG_DEBUG, "got correct http reply\n");
+			node->nr_fails = 0;
 			if (node->down) {
 				node->down = 0;
 				krk_monitor_notify(monitor, node);

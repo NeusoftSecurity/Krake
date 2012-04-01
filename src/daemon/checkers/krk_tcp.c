@@ -64,6 +64,7 @@ static void tcp_write_handler(int sock, short type, void *arg)
 		ret = getsockopt(conn->sock, SOL_SOCKET, SO_ERROR, &err, &errlen);
 		if (ret == 0) {
 			if (err == 0) {
+				node->nr_fails = 0;
 				if (node->down) {
 					node->down = 0;
 					krk_monitor_notify(monitor, node);
@@ -162,6 +163,9 @@ static int tcp_process_node(struct krk_node *node, void *param)
 	}
 
 	/* ret == 0, connect ok */
+
+	/* clear nr fails if success */
+	node->nr_fails = 0;
 
 	krk_connection_destroy(conn);
 	

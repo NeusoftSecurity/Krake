@@ -19,6 +19,7 @@ extern struct krk_checker http_checker;
 #define KRK_MAX_HTTP_LEN 1024
 
 #define KRK_MAX_HTTP_SEND 512
+#define KRK_MAX_HTTP_SEND_FILE 128
 #define KRK_MAX_HTTP_EXPECTED 1024
 #define KRK_MAX_HTTP_EXPECTED_FILE 128
 
@@ -29,6 +30,7 @@ extern struct krk_checker http_checker;
 #define HTTP_PARSE_SEND 0
 #define HTTP_PARSE_EXPECTED 1
 #define HTTP_PARSE_EXPECTED_FILE 2
+#define HTTP_PARSE_SEND_FILE 3
 
 
 /* maybe this is useless */
@@ -40,6 +42,8 @@ struct http_checker_data {
 struct http_checker_param {
 	char send[KRK_MAX_HTTP_SEND]; /* request line */
 	unsigned int send_len;
+	char send_file[KRK_MAX_HTTP_SEND_FILE];
+	unsigned int send_file_len;
 	char expected[KRK_MAX_HTTP_EXPECTED];
 	unsigned int expected_len;
 	char expected_file[KRK_MAX_HTTP_EXPECTED_FILE];
@@ -48,6 +52,7 @@ struct http_checker_param {
 	char password[64];
 
 	char ssl;
+	char send_in_file;
 	char expected_in_file;
 };
 

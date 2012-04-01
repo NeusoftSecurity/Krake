@@ -49,7 +49,7 @@ static int icmp_match_packet(void* packet, struct krk_node *node)
 
 	icp = packet;
 	node_id = icp->un.echo.id & 0xff;
-	monitor_id = icp->un.echo.id >> 1;
+	monitor_id = (icp->un.echo.id >> 8) & 0xff;
 
 	monitor = node->parent;
 	
@@ -70,6 +70,11 @@ static void icmp_handle_same_addr_node(const struct krk_node *node)
 	for (i = 0; i < n; i++) {
 		if (nodes[i].id != node->id) {
 			monitor = nodes[i].parent;
+			
+			if (node == &nodes[i]) {
+				continue;
+			}
+
 			if (!nodes[i].ready && 
 					!strcmp("icmp", monitor->checker->name)) {
 				if (!nodes[i].down) {
@@ -138,10 +143,11 @@ static void icmp_read_handler(int sock, short type, void *arg)
 		if (icp->type == ICMP_ECHOREPLY) {
 			if (icmp_match_packet(icp, node)) {
 				krk_log(KRK_LOG_DEBUG, "got correct icmp reply\n");
+				node->nr_fails = 0;
 				if (node->down) {
 					node->down = 0;
 					krk_monitor_notify(monitor, node);
-					icmp_handle_same_addr_node(node);
+					//icmp_handle_same_addr_node(node);
 				}
 			} else {
 				krk_log(KRK_LOG_DEBUG, "id not match\n");
@@ -160,12 +166,18 @@ static void icmp_read_handler(int sock, short type, void *arg)
 	} else if (type == EV_TIMEOUT) {
 		krk_log(KRK_LOG_DEBUG, "icmp checker read timeout\n");
 		node->nr_fails++;
+		krk_log(KRK_LOG_DEBUG, "%s:%d, 0xdead-nr_fails %d\n", 
+			__func__, __LINE__, node->nr_fails);
 		if (node->nr_fails == monitor->threshold) {
+			krk_log(KRK_LOG_DEBUG, "%s:%d, reach max threshold: %d\n", 
+				__func__, __LINE__, monitor->threshold);
 			node->nr_fails = 0;
 			if (!node->down) {
+				krk_log(KRK_LOG_DEBUG, "%s:%d, mark node as down\n", 
+					__func__, __LINE__);
 				node->down = 1;
 				krk_monitor_notify(monitor, node);
-				icmp_handle_same_addr_node(node);
+				//icmp_handle_same_addr_node(node);
 			}
 		}
 	}
@@ -210,7 +222,7 @@ static void icmp_write_handler(int sock, short type, void *arg)
 		icp->code = 0;
 		icp->checksum = 0;
 		icp->un.echo.sequence = htons(icd->sequence);
-		icp->un.echo.id = monitor->id << 1;
+		icp->un.echo.id = monitor->id << 8;
 		icp->un.echo.id |= node->id;
 
 		icp->checksum = krk_in_cksum((unsigned short *)icp, 8 + KRK_ICMP_DATA_LEN, 0);
@@ -227,13 +239,21 @@ static void icmp_write_handler(int sock, short type, void *arg)
 		ret = sendto(sock, packet, 8 + KRK_ICMP_DATA_LEN, 0, 
 				(struct sockaddr*)&node->inaddr, sizeof(struct sockaddr));
 		if (ret < 0) {
+			krk_log(KRK_LOG_DEBUG, "%s:%d, ret < 0\n", 
+				__func__, __LINE__);
+			
 			node->nr_fails++;
+		
+			krk_log(KRK_LOG_DEBUG, "%s:%d, 0xdead-nr_fails %d\n", 
+				__func__, __LINE__, node->nr_fails);
 			if (node->nr_fails == monitor->threshold) {
 				node->nr_fails = 0;
 				if (!node->down) {
+					krk_log(KRK_LOG_DEBUG, "%s:%d, mark node as down\n", 
+						__func__, __LINE__);
 					node->down = 1;
 					krk_monitor_notify(monitor, node);
-					icmp_handle_same_addr_node(node);
+					//icmp_handle_same_addr_node(node);
 				}
 			}
 
@@ -246,10 +266,16 @@ static void icmp_write_handler(int sock, short type, void *arg)
 		krk_event_add(conn->rev);
 	} else if (type == EV_TIMEOUT) {
 		krk_log(KRK_LOG_DEBUG, "write timeout!\n");
+		
 		node->nr_fails++;
+	
+		krk_log(KRK_LOG_DEBUG, "%s:%d, 0xdead-nr_fails %d\n", 
+			__func__, __LINE__, node->nr_fails);
 		if (node->nr_fails == monitor->threshold) {
 			node->nr_fails = 0;
 			if (!node->down) {
+				krk_log(KRK_LOG_DEBUG, "%s:%d, mark node as down\n", 
+					__func__, __LINE__);
 				node->down = 1;
 				krk_monitor_notify(monitor, node);
 			}
@@ -283,16 +309,23 @@ static int icmp_init_node(struct krk_node *node)
 	 * more than one node with the 
 	 * same address, consider them as 
 	 * one.
+	 *
+	 * XXX: Temporarily disable this feature.
 	 */
+#if 0
 	n = krk_monitor_get_nodes_by_addr(node->addr, nodes);
 	for (i = 0; i < n; i++) {
 		monitor = nodes[i].parent;
+		if (node == &nodes[i]) {
+			continue;
+		}
+
 		if (nodes[i].ready && 
 				!strcmp("icmp", monitor->checker->name)) {
 			return KRK_OK;
 		}
 	}
-
+#endif
 	node->ready = 1;
 	
 	icd = malloc(sizeof(struct icmp_checker_data));
