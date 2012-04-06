@@ -18,34 +18,34 @@ static char log_type = LOG_TYPE_DEFAULT;
 static char log_level = LOG_LEVEL_DEFAULT;
 
 static char *krk_prio[] = {
-	"emerg",
-	"alert",
-	"crit",
-	"err",
-	"warning",
-	"notice",
-	"info",
-	"debug"
+    "emerg",
+    "alert",
+    "crit",
+    "err",
+    "warning",
+    "notice",
+    "info",
+    "debug"
 };
 
 int krk_log_init(void)
 {
-	log_fp = fopen(KRK_LOG_FILE, "w");
-	if (log_fp == NULL) {
-		return KRK_ERROR;
-	}
+    log_fp = fopen(KRK_LOG_FILE, "w");
+    if (log_fp == NULL) {
+        return KRK_ERROR;
+    }
 
-	openlog(KRK_SYSLOG_IDENT, 0, KRK_SYSLOG_FACILITY);
+    openlog(KRK_SYSLOG_IDENT, 0, KRK_SYSLOG_FACILITY);
 
-	return KRK_OK;
+    return KRK_OK;
 }
 
 int krk_log_exit(void)
 {
-	fclose(log_fp);
-	closelog();
+    fclose(log_fp);
+    closelog();
 
-	return KRK_OK;
+    return KRK_OK;
 }
 
 /**
@@ -59,55 +59,55 @@ int krk_log_exit(void)
  */
 int krk_log_set_type(char *type, char *level)
 {
-	int i, j, len;
+    int i, j, len;
 
-	log_type = 0;
+    log_type = 0;
 
-	len = strlen(type);
-	for (i = 0; i < len; i++) {
-		if (i + strlen("file") <= len 
-				&& !memcmp(type + i, "file", strlen("file"))) {
-			log_type |= LOG_TYPE_FILE;
-		}
+    len = strlen(type);
+    for (i = 0; i < len; i++) {
+        if (i + strlen("file") <= len 
+                && !memcmp(type + i, "file", strlen("file"))) {
+            log_type |= LOG_TYPE_FILE;
+        }
 
-		if (i + strlen("syslog") <= len 
-				&& !memcmp(type + i, "syslog", strlen("syslog"))) {
-			log_type |= LOG_TYPE_SYSLOG;
-		}
-	}
+        if (i + strlen("syslog") <= len 
+                && !memcmp(type + i, "syslog", strlen("syslog"))) {
+            log_type |= LOG_TYPE_SYSLOG;
+        }
+    }
 
-	len = strlen(level);
-	for (j = 0; j < 8; j++) {
-		if (strlen(level) == strlen(krk_prio[j])
-				&& !memcmp(level, krk_prio[j], strlen(krk_prio[j]))) {
-			log_level = j;
-			goto out;
-		}
-	}
+    len = strlen(level);
+    for (j = 0; j < 8; j++) {
+        if (strlen(level) == strlen(krk_prio[j])
+                && !memcmp(level, krk_prio[j], strlen(krk_prio[j]))) {
+            log_level = j;
+            goto out;
+        }
+    }
 
 out:
-	if (log_type == 0) {
-		log_type = LOG_TYPE_DEFAULT;
-	}
+    if (log_type == 0) {
+        log_type = LOG_TYPE_DEFAULT;
+    }
 
-	krk_log(KRK_LOG_NOTICE, "log settings changed, " 
-			"log type: %d, log level: %d\n", log_type, log_level);
-	
-	return KRK_OK;
+    krk_log(KRK_LOG_NOTICE, "log settings changed, " 
+            "log type: %d, log level: %d\n", log_type, log_level);
+
+    return KRK_OK;
 }
 
 static char* weed(char *str)
 {
-	int i;
+    int i;
 
-	for (i = 0; i < strlen(str); i++) {
-		if (str[i] == '\n') {
-			str[i] = '\0';
-			break;
-		}
-	}
+    for (i = 0; i < strlen(str); i++) {
+        if (str[i] == '\n') {
+            str[i] = '\0';
+            break;
+        }
+    }
 
-	return str;
+    return str;
 }
 
 /**
@@ -123,30 +123,30 @@ static char* weed(char *str)
  */
 void krk_log(int prio, const char *fmt, ...)
 {
-	va_list arg_ptr;
-	char new_fmt[KRK_MAX_LOG_SIZE];
-	time_t t;
+    va_list arg_ptr;
+    char new_fmt[KRK_MAX_LOG_SIZE];
+    time_t t;
 
-	if (prio > log_level) {
-		return;
-	}
+    if (prio > log_level) {
+        return;
+    }
 
-	t = time(NULL);
+    t = time(NULL);
 
-	if (log_type & LOG_TYPE_FILE) {
-		va_start(arg_ptr, fmt);
-		snprintf(new_fmt, KRK_MAX_LOG_SIZE, filelog_format, 
-				weed(ctime(&t)), krk_prio[prio], fmt);
-		
-		vfprintf(log_fp, new_fmt, arg_ptr);
-		fflush(log_fp);
+    if (log_type & LOG_TYPE_FILE) {
+        va_start(arg_ptr, fmt);
+        snprintf(new_fmt, KRK_MAX_LOG_SIZE, filelog_format, 
+                weed(ctime(&t)), krk_prio[prio], fmt);
 
-		va_end(arg_ptr);
-	}
+        vfprintf(log_fp, new_fmt, arg_ptr);
+        fflush(log_fp);
 
-	if (log_type & LOG_TYPE_SYSLOG) {
-		va_start(arg_ptr, fmt);
-		vsyslog(prio, fmt, arg_ptr);
-		va_end(arg_ptr);
-	}
+        va_end(arg_ptr);
+    }
+
+    if (log_type & LOG_TYPE_SYSLOG) {
+        va_start(arg_ptr, fmt);
+        vsyslog(prio, fmt, arg_ptr);
+        va_end(arg_ptr);
+    }
 }

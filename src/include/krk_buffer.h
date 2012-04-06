@@ -15,12 +15,12 @@
 
 
 struct krk_buffer {
-	char *pos;
-	char *last;
-	char *head;
-	char *end;
+    char *pos;
+    char *last;
+    char *head;
+    char *end;
 
-	size_t size;
+    size_t size;
 };
 
 extern struct krk_buffer* krk_buffer_create(size_t size);

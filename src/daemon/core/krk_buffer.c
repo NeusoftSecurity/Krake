@@ -22,29 +22,29 @@ void krk_buffer_destroy(struct krk_buffer *buf);
 
 struct krk_buffer* krk_buffer_create(size_t size)
 {
-	struct krk_buffer *buf;
+    struct krk_buffer *buf;
 
-	if (size == 0) {
-		size = KRK_DEFAULT_BUFSZ;
-	}
+    if (size == 0) {
+        size = KRK_DEFAULT_BUFSZ;
+    }
 
-	buf = malloc(sizeof(struct krk_buffer));
-	if (!buf) {
-		return NULL;
-	}
-	
-	buf->head = malloc(size);
-	if (!buf->head) {
-		free(buf);
-		return NULL;
-	}
+    buf = malloc(sizeof(struct krk_buffer));
+    if (!buf) {
+        return NULL;
+    }
 
-	buf->end = buf->head + size;
-	buf->pos = buf->last = buf->head;
+    buf->head = malloc(size);
+    if (!buf->head) {
+        free(buf);
+        return NULL;
+    }
 
-	buf->size = size;
+    buf->end = buf->head + size;
+    buf->pos = buf->last = buf->head;
 
-	return buf;
+    buf->size = size;
+
+    return buf;
 }
 
 /**
@@ -58,32 +58,32 @@ struct krk_buffer* krk_buffer_create(size_t size)
  */
 struct krk_buffer* krk_buffer_resize(struct krk_buffer *buf, size_t size)
 {
-	struct krk_buffer *new_buf;
+    struct krk_buffer *new_buf;
 
-	if (size <= buf->size) {
-		return buf;
-	}
+    if (size <= buf->size) {
+        return buf;
+    }
 
-	new_buf = krk_buffer_create(size);
-	if (!new_buf) {
-		return NULL;
-	}
+    new_buf = krk_buffer_create(size);
+    if (!new_buf) {
+        return NULL;
+    }
 
-	memcpy(new_buf->head, buf->head, buf->size);
-	new_buf->pos += (buf->pos - buf->head);
-	new_buf->last += (buf->last - buf->head);
+    memcpy(new_buf->head, buf->head, buf->size);
+    new_buf->pos += (buf->pos - buf->head);
+    new_buf->last += (buf->last - buf->head);
 
-	krk_log(KRK_LOG_DEBUG, "buf resized,  old: %p, new: %p, size: %d->%d\n", 
-		buf->head, new_buf->head, buf->size, new_buf->size);
-	
-	krk_buffer_destroy(buf);
-	
-	return new_buf;
+    krk_log(KRK_LOG_DEBUG, "buf resized,  old: %p, new: %p, size: %d->%d\n", 
+            buf->head, new_buf->head, buf->size, new_buf->size);
+
+    krk_buffer_destroy(buf);
+
+    return new_buf;
 }
 
 void krk_buffer_destroy(struct krk_buffer *buf)
 {
-	free(buf->head);
-	free(buf);
+    free(buf->head);
+    free(buf);
 }
 

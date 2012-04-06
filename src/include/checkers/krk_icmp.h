@@ -20,8 +20,8 @@ extern struct krk_checker icmp_checker;
 #define KRK_ICMP_DATA_LEN 20
 
 struct icmp_checker_data {
-	unsigned short id;
-	unsigned short sequence;
+    unsigned short id;
+    unsigned short sequence;
 };
 
 #endif

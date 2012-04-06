@@ -35,31 +35,31 @@ extern struct krk_checker http_checker;
 
 /* maybe this is useless */
 struct http_checker_data {
-	char send[KRK_MAX_HTTP_SEND];
-	char expected[KRK_MAX_HTTP_EXPECTED];
+    char send[KRK_MAX_HTTP_SEND];
+    char expected[KRK_MAX_HTTP_EXPECTED];
 };
 
 struct http_checker_param {
-	char send[KRK_MAX_HTTP_SEND]; /* request line */
-	unsigned int send_len;
-	char send_file[KRK_MAX_HTTP_SEND_FILE];
-	unsigned int send_file_len;
-	char expected[KRK_MAX_HTTP_EXPECTED];
-	unsigned int expected_len;
-	char expected_file[KRK_MAX_HTTP_EXPECTED_FILE];
-	unsigned int expected_file_len;
-	char username[64];
-	char password[64];
+    char send[KRK_MAX_HTTP_SEND]; /* request line */
+    unsigned int send_len;
+    char send_file[KRK_MAX_HTTP_SEND_FILE];
+    unsigned int send_file_len;
+    char expected[KRK_MAX_HTTP_EXPECTED];
+    unsigned int expected_len;
+    char expected_file[KRK_MAX_HTTP_EXPECTED_FILE];
+    unsigned int expected_file_len;
+    char username[64];
+    char password[64];
 
-	char ssl;
-	char send_in_file;
-	char expected_in_file;
+    char ssl;
+    char send_in_file;
+    char expected_in_file;
 };
 
 struct http_response_header {
-	unsigned int code;
-	char *header_start, *header_last, *body_start; /* include last two \r\n */
-	unsigned int body_len;
+    unsigned int code;
+    char *header_start, *header_last, *body_start; /* include last two \r\n */
+    unsigned int body_len;
 };
 
 #endif

@@ -30,57 +30,57 @@
 #define KRK_MONITOR_MAX_NR 64
 
 struct krk_monitor {
-	char name[KRK_NAME_LEN];
-	unsigned char id;
+    char name[KRK_NAME_LEN];
+    unsigned char id;
 
-	struct list_head list;
-	
-	unsigned long interval;
-	unsigned long timeout;
-	unsigned long threshold;
+    struct list_head list;
 
-	struct krk_checker *checker;
-	void *checker_param;
-	unsigned int checker_param_len; /* size of void *checker_param */
-	void *parsed_checker_param; /* points to checker-specific data structure */
+    unsigned long interval;
+    unsigned long timeout;
+    unsigned long threshold;
 
-	struct list_head node_list;
-	unsigned long nr_nodes;
+    struct krk_checker *checker;
+    void *checker_param;
+    unsigned int checker_param_len; /* size of void *checker_param */
+    void *parsed_checker_param; /* points to checker-specific data structure */
 
-	struct krk_event *tmout_ev;	
+    struct list_head node_list;
+    unsigned long nr_nodes;
 
-	char notify_script[KRK_NAME_LEN];
-	char notify_script_name[KRK_NAME_LEN];
+    struct krk_event *tmout_ev;	
 
-	unsigned int enabled:1;
+    char notify_script[KRK_NAME_LEN];
+    char notify_script_name[KRK_NAME_LEN];
+
+    unsigned int enabled:1;
 };
 
 struct krk_node {
-	char addr[KRK_IPADDR_LEN];
-	unsigned int port;
-	unsigned int nr_fails;
-	unsigned char id;
+    char addr[KRK_IPADDR_LEN];
+    unsigned int port;
+    unsigned int nr_fails;
+    unsigned char id;
 
-	union {
-		struct sockaddr_in inaddr;
-		struct sockaddr_in6 in6addr;
-	};
+    union {
+        struct sockaddr_in inaddr;
+        struct sockaddr_in6 in6addr;
+    };
 
-	struct list_head list;
-	struct krk_monitor *parent;
+    struct list_head list;
+    struct krk_monitor *parent;
 
-	struct krk_connection *conn;
-	struct list_head connection_list;
-	unsigned long nr_connections;
+    struct krk_connection *conn;
+    struct list_head connection_list;
+    unsigned long nr_connections;
 
-	void *checker_data;    /* initialed in <checker>_init_node */
+    void *checker_data;    /* initialed in <checker>_init_node */
 
-	struct krk_buffer *buf;
+    struct krk_buffer *buf;
 
-	unsigned int ipv6:1;
-	unsigned int down:1;
-	unsigned int ready:1;
-	unsigned int ssl:1;
+    unsigned int ipv6:1;
+    unsigned int down:1;
+    unsigned int ready:1;
+    unsigned int ssl:1;
 };
 
 extern struct krk_monitor* krk_monitor_find(const char *name);
@@ -90,30 +90,30 @@ extern int krk_monitor_init(void);
 extern int krk_all_monitors_destroy(void);
 extern int krk_monitor_exit(void);
 extern int krk_monitor_add_node(struct krk_monitor *monitor, 
-		struct krk_node *node);
+        struct krk_node *node);
 extern int krk_monitor_remove_node(struct krk_monitor *monitor, 
-		struct krk_node *node);
+        struct krk_node *node);
 extern void krk_monitor_enable(struct krk_monitor *monitor);
 extern void krk_monitor_disable(struct krk_monitor *monitor);
 extern struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port);
 extern int krk_monitor_destroy_node(struct krk_node *node);
 extern struct krk_node* krk_monitor_find_node(const char *addr, 
-		const unsigned short port, struct krk_monitor *monitor);
+        const unsigned short port, struct krk_monitor *monitor);
 extern int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
-		struct krk_node *node); 
+        struct krk_node *node); 
 extern int krk_monitors_destroy_all_nodes(struct krk_monitor *monitor);
 extern void krk_monitor_notify(struct krk_monitor *monitor, 
-		struct krk_node *node);
+        struct krk_node *node);
 extern int krk_monitor_add_node_connection(struct krk_node *node, struct krk_connection *conn);
 extern int krk_monitor_remove_node_connection(struct krk_node *node, struct krk_connection *conn);
 extern int krk_monitor_get_nodes_by_addr(const char *addr, 
-		struct krk_node *nodes);
+        struct krk_node *nodes);
 extern int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
-		struct krk_node *nodes);
+        struct krk_node *nodes);
 extern struct krk_node* krk_monitor_find_node_by_id(const unsigned char id, 
-		struct krk_monitor *monitor);
+        struct krk_monitor *monitor);
 extern int krk_mointor_set_node_status(struct krk_monitor *monitor, 
-		unsigned char id, int status);
+        unsigned char id, int status);
 extern int krk_monitor_get_all_monitors(struct krk_monitor *monitors);
 extern int krk_monitor_destroy_all_nodes(struct krk_monitor *monitor);
 

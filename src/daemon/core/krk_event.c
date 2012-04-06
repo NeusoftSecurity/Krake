@@ -35,33 +35,33 @@ void krk_event_set_write(int sock, struct krk_event *event);
  */
 struct krk_event* krk_event_create(size_t bufsz)
 {
-	struct krk_event* event;
+    struct krk_event* event;
 
-	event = malloc(sizeof(struct krk_event));
-	if (!event) {
-		return NULL;
-	}
+    event = malloc(sizeof(struct krk_event));
+    if (!event) {
+        return NULL;
+    }
 
-	memset(event, 0, sizeof(struct krk_event));
+    memset(event, 0, sizeof(struct krk_event));
 
-	event->ev = malloc(sizeof(struct event));
-	if (!event->ev) {
-		free(event);
-		return NULL;
-	}
+    event->ev = malloc(sizeof(struct event));
+    if (!event->ev) {
+        free(event);
+        return NULL;
+    }
 
-	memset(event->ev, 0, sizeof(struct event));
-	
-	event->buf = krk_buffer_create(bufsz);
-	if (!event->buf) {
-		free(event->ev);
-		free(event);
-		return NULL;
-	}
+    memset(event->ev, 0, sizeof(struct event));
 
-	memset(event->buf, 0, bufsz);
+    event->buf = krk_buffer_create(bufsz);
+    if (!event->buf) {
+        free(event->ev);
+        free(event);
+        return NULL;
+    }
 
-	return event;
+    memset(event->buf, 0, bufsz);
+
+    return event;
 }
 
 /**
@@ -74,29 +74,29 @@ struct krk_event* krk_event_create(size_t bufsz)
  */
 int krk_event_destroy(struct krk_event* event)
 {
-	if (!event) {
-		/*TODO: add error log */
-		return -1;
-	}
+    if (!event) {
+        /*TODO: add error log */
+        return -1;
+    }
 
-	krk_event_del(event);
+    krk_event_del(event);
 
-	if (event->ev) {
-		free(event->ev);
-	}
-	
-	if (event->timeout) {
-		free(event->timeout);
-	}
-	
-	if (event->buf) {
-		krk_buffer_destroy(event->buf);
-		event->buf = NULL;
-	}
-	
-	free(event);
+    if (event->ev) {
+        free(event->ev);
+    }
 
-	return 0;
+    if (event->timeout) {
+        free(event->timeout);
+    }
+
+    if (event->buf) {
+        krk_buffer_destroy(event->buf);
+        event->buf = NULL;
+    }
+
+    free(event);
+
+    return 0;
 }
 
 /**
@@ -107,9 +107,9 @@ int krk_event_destroy(struct krk_event* event)
  */
 int krk_event_init(void)
 {
-	event_init();
+    event_init();
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -120,41 +120,41 @@ int krk_event_init(void)
  */
 int krk_event_exit(void)
 {
-	return 0;
+    return 0;
 }
 
 int krk_event_add(struct krk_event *event)
 {
-	return event_add(event->ev, event->timeout);
+    return event_add(event->ev, event->timeout);
 }
 
 int krk_event_del(struct krk_event *event)
 {
-	return event_del(event->ev);
+    return event_del(event->ev);
 }
 
 void krk_event_set(int sock, struct krk_event *event, short type)
 {
-	event_set(event->ev, sock, type, event->handler, (void*)event);
+    event_set(event->ev, sock, type, event->handler, (void*)event);
 }
 
 void krk_event_set_timer(struct krk_event *tmout)
 {
-	evtimer_set(tmout->ev, tmout->handler, (void*)tmout);
+    evtimer_set(tmout->ev, tmout->handler, (void*)tmout);
 }
 
 void krk_event_set_read(int sock, struct krk_event *event)
 {
-	krk_event_set(sock, event, EV_READ);
+    krk_event_set(sock, event, EV_READ);
 }
 
 void krk_event_set_write(int sock, struct krk_event *event)
 {
-	krk_event_set(sock, event, EV_WRITE);
+    krk_event_set(sock, event, EV_WRITE);
 }
 
 void krk_event_loop(void)
 {
-	event_dispatch();
+    event_dispatch();
 }
 

@@ -41,52 +41,52 @@ extern void krk_config_write(int sock, short type, void *arg);
 #define KRK_CONF_DEFAULT_THRESHOLD 3
 
 struct krk_config_monitor {
-	char monitor[KRK_NAME_LEN];
-	unsigned long interval;
-	unsigned long timeout;
-	unsigned long threshold;
-	
-	char checker[KRK_NAME_LEN];
-	unsigned long checker_param_len;
+    char monitor[KRK_NAME_LEN];
+    unsigned long interval;
+    unsigned long timeout;
+    unsigned long threshold;
 
-	unsigned int nr_nodes;
+    char checker[KRK_NAME_LEN];
+    unsigned long checker_param_len;
+
+    unsigned int nr_nodes;
 };
 
 struct krk_config_node {
-	char addr[KRK_IPADDR_LEN]; /* only accept ip address */
-	unsigned short port;
-	
-	unsigned int down:1;
+    char addr[KRK_IPADDR_LEN]; /* only accept ip address */
+    unsigned short port;
+
+    unsigned int down:1;
 };
 
 struct krk_config {
-	char command;
-	char type;
+    char command;
+    char type;
 
-	/* args of monitor */
-	char monitor[KRK_NAME_LEN];
-	char checker[KRK_NAME_LEN];
-	char *checker_param; /* point to data */
-	unsigned long checker_param_len;
-	char script[KRK_NAME_LEN];
+    /* args of monitor */
+    char monitor[KRK_NAME_LEN];
+    char checker[KRK_NAME_LEN];
+    char *checker_param; /* point to data */
+    unsigned long checker_param_len;
+    char script[KRK_NAME_LEN];
 
-	unsigned long interval;
-	unsigned long timeout;
-	unsigned long threshold;
+    unsigned long interval;
+    unsigned long timeout;
+    unsigned long threshold;
 
-	/* log */
-	char log_type[KRK_ARG_LEN];
-	char log_level[KRK_ARG_LEN];
+    /* log */
+    char log_type[KRK_ARG_LEN];
+    char log_level[KRK_ARG_LEN];
 
-	/* args of node */
-	char node[KRK_IPADDR_LEN]; /* only accept ip address */
-	unsigned short port;
+    /* args of node */
+    char node[KRK_IPADDR_LEN]; /* only accept ip address */
+    unsigned short port;
 
-	char data[0]; /* additional data */
+    char data[0]; /* additional data */
 };
 
 struct krk_config_ret {
-	int retval;
-	unsigned int data_len;
+    int retval;
+    unsigned int data_len;
 };
 #endif

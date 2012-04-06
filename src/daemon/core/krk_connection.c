@@ -38,47 +38,47 @@ unsigned int krk_nr_connections = 0;
  */
 struct krk_connection* krk_connection_create(const char *name, size_t rbufsz, size_t wbufsz)
 {
-	struct krk_connection *conn;
+    struct krk_connection *conn;
 
-	if (krk_nr_connections == krk_max_connections) {
-		return NULL;
-	}
+    if (krk_nr_connections == krk_max_connections) {
+        return NULL;
+    }
 
-	conn = malloc(sizeof(struct krk_connection));
-	if (!conn) {
-		return NULL;
-	}
+    conn = malloc(sizeof(struct krk_connection));
+    if (!conn) {
+        return NULL;
+    }
 
-	memset(conn, 0, sizeof(struct krk_connection));
-	
-	/* create read/write event */
-	conn->rev = krk_event_create(rbufsz);
-	if (!conn->rev) {
-		free(conn);
-		return NULL;
-	} else {
-		conn->rev->conn = conn;
-	}
+    memset(conn, 0, sizeof(struct krk_connection));
 
-	conn->wev = krk_event_create(wbufsz);
-	if (!conn->wev) {
-		(void)krk_event_destroy(conn->rev);
-		free(conn);
-		return NULL;
-	} else {
-		conn->wev->conn = conn;
-	}
+    /* create read/write event */
+    conn->rev = krk_event_create(rbufsz);
+    if (!conn->rev) {
+        free(conn);
+        return NULL;
+    } else {
+        conn->rev->conn = conn;
+    }
 
-	if (name) {
-		strncpy(conn->name, name, KRK_NAME_LEN);
-		conn->name[KRK_NAME_LEN - 1] = 0;
-	}
+    conn->wev = krk_event_create(wbufsz);
+    if (!conn->wev) {
+        (void)krk_event_destroy(conn->rev);
+        free(conn);
+        return NULL;
+    } else {
+        conn->wev->conn = conn;
+    }
 
-	list_add_tail(&conn->list, &krk_all_connections);
-	
-	krk_nr_connections++;
+    if (name) {
+        strncpy(conn->name, name, KRK_NAME_LEN);
+        conn->name[KRK_NAME_LEN - 1] = 0;
+    }
 
-	return conn;
+    list_add_tail(&conn->list, &krk_all_connections);
+
+    krk_nr_connections++;
+
+    return conn;
 }
 
 /**
@@ -91,22 +91,22 @@ struct krk_connection* krk_connection_create(const char *name, size_t rbufsz, si
  */
 int krk_connection_destroy(struct krk_connection *conn)
 {
-	if (!conn) {
-		return KRK_ERROR;
-	}
+    if (!conn) {
+        return KRK_ERROR;
+    }
 
-	krk_event_destroy(conn->rev);
-	krk_event_destroy(conn->wev);
+    krk_event_destroy(conn->rev);
+    krk_event_destroy(conn->wev);
 
-	close(conn->sock);
+    close(conn->sock);
 
-	list_del(&conn->list);
-	
-	free(conn);
+    list_del(&conn->list);
 
-	krk_nr_connections--;
+    free(conn);
 
-	return KRK_OK;
+    krk_nr_connections--;
+
+    return KRK_OK;
 }
 
 /**
@@ -118,30 +118,30 @@ int krk_connection_destroy(struct krk_connection *conn)
  */
 int krk_all_connections_destroy(void)
 {
-	struct list_head *p, *n;
-	struct krk_connection *tmp;
-	int ret = KRK_OK;
+    struct list_head *p, *n;
+    struct krk_connection *tmp;
+    int ret = KRK_OK;
 
-	list_for_each_safe(p, n, &krk_all_connections) {
-		tmp = list_entry(p, struct krk_connection, list);
-		if (krk_connection_destroy(tmp)) {
-			ret = KRK_ERROR;
-		}
-	}
+    list_for_each_safe(p, n, &krk_all_connections) {
+        tmp = list_entry(p, struct krk_connection, list);
+        if (krk_connection_destroy(tmp)) {
+            ret = KRK_ERROR;
+        }
+    }
 
-	return ret;
+    return ret;
 }
 
 int krk_connection_init(void)
 {
-	INIT_LIST_HEAD(&krk_all_connections);
+    INIT_LIST_HEAD(&krk_all_connections);
 
-	krk_max_connections = 1024;
+    krk_max_connections = 1024;
 
-	return KRK_OK;
+    return KRK_OK;
 }
 
 int krk_connection_exit(void)
 {
-	return krk_all_connections_destroy();
+    return krk_all_connections_destroy();
 }

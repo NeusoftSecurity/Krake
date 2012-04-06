@@ -18,12 +18,12 @@
 typedef void (*ev_handler)(int sock, short type, void *arg);
 
 struct krk_event {
-	struct event *ev;
-	struct timeval *timeout;
-	ev_handler handler;
-	void *conn;
-	struct krk_buffer *buf;
-	void *data;
+    struct event *ev;
+    struct timeval *timeout;
+    ev_handler handler;
+    void *conn;
+    struct krk_buffer *buf;
+    void *data;
 };
 
 
