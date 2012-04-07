@@ -26,9 +26,13 @@ AC_ARG_WITH(libevent_libraries,
 			[with_libevent_libraries="$withval"],
 			[with_libevent_libraries=no])
 
+CPPFLAGS="${CPPFLAGS} -I/usr/local/include"
+
 if test "$with_libevent_includes" != "no"; then
 	CPPFLAGS="${CPPFLAGS} -I${with_libevent_includes}"
 fi
+
+LIBS="${LIBS} -L/usr/local/lib"
 
 if test "$with_libevent_libraries" != "no"; then
 	LIBS="${LIBS} -L${with_libevent_libraries}"
