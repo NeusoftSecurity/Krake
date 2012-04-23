@@ -1,3 +1,10 @@
-1) I need a professional --help/--version output of the krake daemon
-2) I need make the autoconf/automake toolchain more useful.
-3) a log function to replace current fprintfs.
+*) professional --help/--version output of the krake daemon
+*) make the autoconf/automake toolchain more useful. now we plan to support xBSD and Linux
+*) change cli/daemon mode to configuration file
+*) support https checker
+*) support success threshold
+*) a more reasonable notification mechanism to other components
+*) maybe other protocols
+*) health status(red, yellow, green), depending on the response time of the detected node
+*) support cloud checker. this means krake could use the cloud platform API to check the health status of the detected node
+*) support cloud actions. auto-scaling feature.
