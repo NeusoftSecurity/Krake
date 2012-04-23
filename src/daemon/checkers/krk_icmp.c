@@ -15,7 +15,7 @@
 #include <checkers/krk_icmp.h>
 
 #include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
+//#include <netinet/ip_icmp.h>
 
 #include <krk_log.h>
 
@@ -42,7 +42,7 @@ static int icmp_parse_param(struct krk_monitor *monitor,
 
 static int icmp_match_packet(void* packet, struct krk_node *node)
 {
-    struct icmphdr *icp;
+    struct krk_icmphdr *icp;
     unsigned char monitor_id;
     unsigned char node_id;
     struct krk_monitor *monitor;
@@ -96,8 +96,12 @@ static void icmp_read_handler(int sock, short type, void *arg)
     struct krk_connection *conn;
     struct krk_node *node;
     struct krk_monitor *monitor;
-    struct icmphdr *icp;
+    struct krk_icmphdr *icp;
+#ifdef __BSD_VISIBLE
+    struct ip *ip;
+#else
     struct iphdr *ip;
+#endif
     struct icmp_checker_data *icd;
     void *packet = NULL;
     int ret, packlen;
@@ -130,12 +134,21 @@ static void icmp_read_handler(int sock, short type, void *arg)
 
         /* recv ok */
         ip = packet;
+#ifdef __BSD_VISIBLE
+        if (ip->ip_hl < 5) {
+#else
         if (ip->ihl < 5) {
+#endif
             goto out;
         }
 
+#ifdef __BSD_VISIBLE
+        krk_log(KRK_LOG_DEBUG, "saddr: %x\n", ip->ip_src.s_addr);
+        icp = packet + ip->ip_hl * 4;
+#else
         krk_log(KRK_LOG_DEBUG, "saddr: %x\n", ip->saddr);
         icp = packet + ip->ihl * 4;
+#endif
         /* we do not care about checksum */
         krk_log(KRK_LOG_DEBUG, "ret is %d, icp->id is %x, node->id is %x\n", 
                 ret, icp->un.echo.id, node->id);
@@ -197,7 +210,7 @@ static void icmp_write_handler(int sock, short type, void *arg)
     struct krk_connection *conn;
     struct krk_node *node;
     struct krk_monitor *monitor;
-    struct icmphdr *icp;
+    struct krk_icmphdr *icp;
     struct icmp_checker_data *icd;
     void *packet = NULL;
     int ret;
@@ -217,7 +230,7 @@ static void icmp_write_handler(int sock, short type, void *arg)
 
         memset(packet, 0, 8 + KRK_ICMP_DATA_LEN);
 
-        icp = (struct icmphdr *)packet;
+        icp = (struct krk_icmphdr *)packet;
         icp->type = ICMP_ECHO;
         icp->code = 0;
         icp->checksum = 0;
