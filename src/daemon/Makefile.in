@@ -48,8 +48,9 @@ PROGRAMS = $(bin_PROGRAMS)
 am_krake_OBJECTS = krk_core.$(OBJEXT) krk_socket.$(OBJEXT) \
 	krk_event.$(OBJEXT) krk_connection.$(OBJEXT) \
 	krk_config.$(OBJEXT) krk_buffer.$(OBJEXT) \
-	krk_monitor.$(OBJEXT) krk_log.$(OBJEXT) krk_checker.$(OBJEXT) \
-	krk_tcp.$(OBJEXT) krk_icmp.$(OBJEXT) krk_http.$(OBJEXT)
+	krk_monitor.$(OBJEXT) krk_log.$(OBJEXT) krk_ssl.$(OBJEXT) \
+	krk_checker.$(OBJEXT) krk_tcp.$(OBJEXT) krk_icmp.$(OBJEXT) \
+	krk_http.$(OBJEXT)
 krake_OBJECTS = $(am_krake_OBJECTS)
 krake_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -153,6 +154,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 krake_SOURCES = core/krk_core.c core/krk_socket.c core/krk_event.c core/krk_connection.c \
 			  core/krk_config.c core/krk_buffer.c core/krk_monitor.c core/krk_log.c \
+			  core/krk_ssl.c \
 			  checkers/krk_checker.c checkers/krk_tcp.c checkers/krk_icmp.c checkers/krk_http.c
 
 AM_CPPFLAGS = -I$(srcdir)/../include
@@ -248,6 +250,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_monitor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_socket.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_ssl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/krk_tcp.Po@am__quote@
 
 .c.o:
@@ -375,6 +378,20 @@ krk_log.obj: core/krk_log.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='core/krk_log.c' object='krk_log.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_log.obj `if test -f 'core/krk_log.c'; then $(CYGPATH_W) 'core/krk_log.c'; else $(CYGPATH_W) '$(srcdir)/core/krk_log.c'; fi`
+
+krk_ssl.o: core/krk_ssl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_ssl.o -MD -MP -MF $(DEPDIR)/krk_ssl.Tpo -c -o krk_ssl.o `test -f 'core/krk_ssl.c' || echo '$(srcdir)/'`core/krk_ssl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_ssl.Tpo $(DEPDIR)/krk_ssl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='core/krk_ssl.c' object='krk_ssl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_ssl.o `test -f 'core/krk_ssl.c' || echo '$(srcdir)/'`core/krk_ssl.c
+
+krk_ssl.obj: core/krk_ssl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_ssl.obj -MD -MP -MF $(DEPDIR)/krk_ssl.Tpo -c -o krk_ssl.obj `if test -f 'core/krk_ssl.c'; then $(CYGPATH_W) 'core/krk_ssl.c'; else $(CYGPATH_W) '$(srcdir)/core/krk_ssl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/krk_ssl.Tpo $(DEPDIR)/krk_ssl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='core/krk_ssl.c' object='krk_ssl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o krk_ssl.obj `if test -f 'core/krk_ssl.c'; then $(CYGPATH_W) 'core/krk_ssl.c'; else $(CYGPATH_W) '$(srcdir)/core/krk_ssl.c'; fi`
 
 krk_checker.o: checkers/krk_checker.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT krk_checker.o -MD -MP -MF $(DEPDIR)/krk_checker.Tpo -c -o krk_checker.o `test -f 'checkers/krk_checker.c' || echo '$(srcdir)/'`checkers/krk_checker.c
