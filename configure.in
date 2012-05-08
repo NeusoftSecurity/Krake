@@ -15,7 +15,7 @@ AC_ARG_ENABLE(debug, [  --enable-debug          enable debugging options],
 				CFLAGS="-g -O0 -Wall"
 			fi 
 			CPPFLAGS="${CPPFLAGS} -DKRK_DEBUG" ],)
-
+# for libevent
 AC_ARG_WITH(libevent_includes,
 			[  --with-libevent-includes=DIR    libevent include directory],
 			[with_libevent_includes="$withval"],
@@ -25,6 +25,17 @@ AC_ARG_WITH(libevent_libraries,
 			[  --with-libevent-libraries=DIR  libevent library directory],
 			[with_libevent_libraries="$withval"],
 			[with_libevent_libraries=no])
+# for openssl lib
+AC_ARG_WITH(libssl_includes,
+			[  --with-libssl-includes=DIR    openssl include directory],
+			[with_libssl_includes="$withval"],
+			[with_libssl_includes=no])
+
+AC_ARG_WITH(libssl_libraries,
+			[  --with-libssl-libraries=DIR   openssl library directory],
+			[with_libssl_libraries="$withval"],
+			[with_libssl_libraries=no])
+
 
 CPPFLAGS="${CPPFLAGS} -I/usr/local/include"
 
@@ -32,10 +43,18 @@ if test "$with_libevent_includes" != "no"; then
 	CPPFLAGS="${CPPFLAGS} -I${with_libevent_includes}"
 fi
 
+if test "$with_libssl_includes" != "no"; then
+	CPPFLAGS="${CPPFLAGS} -I${with_libssl_includes}"
+fi
+
 LIBS="${LIBS} -L/usr/local/lib"
 
 if test "$with_libevent_libraries" != "no"; then
 	LIBS="${LIBS} -L${with_libevent_libraries}"
+fi
+
+if test "$with_libssl_libraries" != "no"; then
+	LIBS="${LIBS} -L${with_libssl_libraries}"
 fi
 
 # Checks for libraries.
@@ -47,6 +66,21 @@ if test "$LEVENT" = "no"; then
     echo "   ERROR!  libevent library not found, go get it from"
     echo "   http://monkey.org/~provos/libevent/"
     echo "   or use the --with-libevent-* options, if you have it installed"
+    echo "   in unusual place"
+    exit
+fi
+
+LSSL=""
+AC_CHECK_LIB([crypto], [OPENSSL_config], , LSSL="no")
+AC_CHECK_LIB([ssl], [SSL_library_init], , LSSL="no")
+#AC_CHECK_LIB([ssl], [SSL_load_error_strings], , LSSL="no")
+#AC_CHECK_LIB([crypto], [EVP_cleanup], , LSSL="no")
+
+if test "$LSSL" = "no"; then
+    echo
+    echo "   ERROR!  openssl library not found, go get it from"
+    echo "   http://www.openssl.org/source/"
+    echo "   or use the --with-libssl-* options, if you have it installed"
     echo "   in unusual place"
     exit
 fi
@@ -63,6 +97,23 @@ if test "$LEVENT" = "no"; then
     echo "   in unusual place"
     exit
 fi
+
+LSSL=""
+AC_CHECK_HEADERS([openssl/ssl.h], , LSSL="no")
+AC_CHECK_HEADERS([openssl/evp.h], , LSSL="no")
+AC_CHECK_HEADERS([openssl/conf.h], , LSSL="no")
+AC_CHECK_HEADERS([openssl/err.h], , LSSL="no")
+AC_CHECK_HEADERS([openssl/engine.h], , LSSL="no")
+
+if test "$LSSL" = "no"; then
+    echo
+    echo "   ERROR!  openssl headers not found, go get it from"
+    echo "   http://www.openssl.org/source/"
+    echo "   or use the --with-libssl-* options, if you have it installed"
+    echo "   in unusual place"
+    exit
+fi
+
 
 # Checks for typedefs, structures, and compiler characteristics.
 
