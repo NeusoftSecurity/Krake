@@ -26,11 +26,12 @@ static const struct option optlong[] = {
     {NULL, 0, NULL, 0}
 };
 
-static const char* optstring = "hv";
+static const char* optstring = "hvc:";
 
 static void krk_usage(void)
 {
     printf("Usage: krake [option]\n"
+            "\t--config/-c		assign the configruation file\n"
             "\t--version/-v		Show Krake version\n"
             "\t--help/-h		Show this help\n");
 }
@@ -119,7 +120,6 @@ static inline int krk_create_pid_file(void)
  */
 static inline int __krk_smooth_quit(void)
 {
-    krk_local_socket_exit();
     krk_remove_pid_file();
 
     krk_monitor_exit();
@@ -168,8 +168,11 @@ static inline void krk_signals(void)
     signal(SIGCHLD, krk_child_quit);
 }
 
+#define KRK_CONFIG_FILE_NAME_LEN 200
+
 int main(int argc, char* argv[])
 {
+    char config_file[KRK_CONFIG_FILE_NAME_LEN] = {};
     int opt, quit = 0;
 
     while (1) {
@@ -187,6 +190,12 @@ int main(int argc, char* argv[])
                 krk_version();
                 quit = 1;
                 break;
+            case 'c':
+                if (strlen(optarg) > KRK_CONFIG_FILE_NAME_LEN) {
+                    quit = 1;
+                }
+                strcpy(config_file, optarg);
+                break;
             default:
                 /* never could be here */
                 break;
@@ -195,6 +204,12 @@ int main(int argc, char* argv[])
 
     if (quit)
         return 0;
+
+    if (krk_config_load(config_file)) {
+        fprintf(stderr, "Fatal: failed to load configuration file!\n");
+        return 1;
+    }
+    return 0;
 
     /* daemonize myself */
     if (krk_daemonize()) {
@@ -221,11 +236,6 @@ int main(int argc, char* argv[])
     }
 
     if (krk_event_init()) {
-        krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
-        return 1;
-    }
-
-    if (krk_local_socket_init()) {
         krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
         return 1;
     }

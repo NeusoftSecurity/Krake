@@ -15,9 +15,6 @@
 
 #include <krk_core.h>
 
-extern void krk_config_read(int sock, short type, void *arg);
-extern void krk_config_write(int sock, short type, void *arg);
-
 #define KRK_CONFIG_MAX_LEN 4096
 
 #define KRK_CONF_CMD_CREATE 1
@@ -53,6 +50,7 @@ struct krk_config_monitor {
 };
 
 struct krk_config_node {
+    struct krk_config_node *next;
     char addr[KRK_IPADDR_LEN]; /* only accept ip address */
     unsigned short port;
 
@@ -61,12 +59,10 @@ struct krk_config_node {
 
 struct krk_config {
     char command;
-    char type;
-
     /* args of monitor */
     char monitor[KRK_NAME_LEN];
     char checker[KRK_NAME_LEN];
-    char *checker_param; /* point to data */
+    char *checker_param;
     unsigned long checker_param_len;
     char script[KRK_NAME_LEN];
 
@@ -79,14 +75,15 @@ struct krk_config {
     char log_level[KRK_ARG_LEN];
 
     /* args of node */
-    char node[KRK_IPADDR_LEN]; /* only accept ip address */
-    unsigned short port;
-
-    char data[0]; /* additional data */
+    struct krk_config_node *node;
+    unsigned long node_num;
 };
 
 struct krk_config_ret {
     int retval;
     unsigned int data_len;
 };
+
+extern int krk_config_load (char *config_file);
+
 #endif
