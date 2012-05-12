@@ -24,7 +24,7 @@
 #include <krk_log.h>
 #include <checkers/krk_checker.h>
 
-static int krk_config_parse_node (struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur) 
+static int krk_config_parse_node (struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur) 
 {
 	xmlChar *key = NULL;
     struct krk_config_node *node = NULL;
@@ -34,8 +34,8 @@ static int krk_config_parse_node (struct krk_config *conf, xmlDocPtr doc, xmlNod
         return -1;
     }
 
-    node->next = conf->node;
-    conf->node = node;
+    node->next = monitor->node;
+    monitor->node = node;
 
 	cur = cur->xmlChildrenNode;
 	while (cur != NULL) {
@@ -64,7 +64,7 @@ static int krk_config_parse_node (struct krk_config *conf, xmlDocPtr doc, xmlNod
     return 0;
 }
 
-static int krk_config_parse_log (struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur) 
+static int krk_config_parse_log (struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur) 
 {
 	xmlChar *key = NULL;
 
@@ -77,7 +77,7 @@ static int krk_config_parse_log (struct krk_config *conf, xmlDocPtr doc, xmlNode
                 xmlFree(key);
                 return -1;
             }
-            strcpy(conf->log_type, key);
+            strcpy(monitor->log_type, key);
 			xmlFree(key);
 		} else if ((!xmlStrcmp(cur->name, (const xmlChar *)"loglevel"))) {
             key = xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
@@ -86,7 +86,7 @@ static int krk_config_parse_log (struct krk_config *conf, xmlDocPtr doc, xmlNode
                 xmlFree(key);
                 return -1;
             }
-            strcpy(conf->log_level, key);
+            strcpy(monitor->log_level, key);
 			xmlFree(key);
 		}
         cur = cur->next;
@@ -95,7 +95,7 @@ static int krk_config_parse_log (struct krk_config *conf, xmlDocPtr doc, xmlNode
     return 0;
 }
 
-static int krk_config_monitor_name(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur)
+static int krk_config_monitor_name(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur)
 {
 	xmlChar *key;
 
@@ -104,23 +104,23 @@ static int krk_config_monitor_name(struct krk_config *conf, xmlDocPtr doc, xmlNo
         xmlFree(key);
         return -1;
     }
-    strcpy(conf->monitor, key);
+    strcpy(monitor->monitor, key);
     printf("monitor name: %s\n", key);
     xmlFree(key);
 
     return 0;
 }
 
-static int krk_config_monitor_status(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur)
+static int krk_config_monitor_status(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur)
 {
     xmlChar *key;
 
     key = xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
     printf("status: %s\n", key);
     if (!xmlStrcmp(key,(const xmlChar *)"enable")) {
-        conf->command = KRK_CONF_CMD_ENABLE;
+        monitor->enable = 1;
     } else if (!xmlStrcmp(key,(const xmlChar *)"disable")) {
-        conf->command = KRK_CONF_CMD_DISABLE;
+        monitor->enable = 0;
     } else {
         xmlFree(key);
         return -1;
@@ -130,7 +130,7 @@ static int krk_config_monitor_status(struct krk_config *conf, xmlDocPtr doc, xml
     return 0;
 }
 
-static int krk_config_monitor_checker(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur)
+static int krk_config_monitor_checker(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur)
 {
     xmlChar *key;
 
@@ -140,14 +140,14 @@ static int krk_config_monitor_checker(struct krk_config *conf, xmlDocPtr doc, xm
         xmlFree(key);
         return -1;
     }
-    strcpy(conf->checker, key);
+    strcpy(monitor->checker, key);
 
     xmlFree(key);
 
     return 0;
 }
 
-static int krk_config_monitor_checker_param(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur)
+static int krk_config_monitor_checker_param(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur)
 {
     xmlChar *key;
     int param_len = 0;
@@ -155,65 +155,65 @@ static int krk_config_monitor_checker_param(struct krk_config *conf, xmlDocPtr d
     key = xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
     printf("check-param: %s\n", key);
     param_len = xmlStrlen(key) + 1;
-    conf->checker_param = calloc(1, param_len);
-    if (conf->checker_param == NULL) {
+    monitor->checker_param = calloc(1, param_len);
+    if (monitor->checker_param == NULL) {
         xmlFree(key);
         return -1;
     }
-    strcpy(conf->checker_param, key);
-    conf->checker_param_len = param_len;
+    strcpy(monitor->checker_param, key);
+    monitor->checker_param_len = param_len;
 
     xmlFree(key);
 
     return 0;
 }
 
-static int krk_config_monitor_interval(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur)
+static int krk_config_monitor_interval(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur)
 {
     xmlChar *key;
 
     key = xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
     printf("interval: %s\n", key);
-    conf->interval = atol(key);
+    monitor->interval = atol(key);
     xmlFree(key);
-    if ((long)conf->interval < 0) {
+    if ((long)monitor->interval < 0) {
         return -1;
     }
 
     return 0;
 }
 
-static int krk_config_monitor_timeout(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur)
+static int krk_config_monitor_timeout(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur)
 {
     xmlChar *key;
 
     key = xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
     printf("timeout: %s\n", key);
-    conf->timeout = atol(key);
+    monitor->timeout = atol(key);
     xmlFree(key);
-    if ((long)conf->timeout < 0) {
+    if ((long)monitor->timeout < 0) {
         return -1;
     }
 
     return 0;
 }
 
-static int krk_config_monitor_threshold(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur)
+static int krk_config_monitor_threshold(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur)
 {
     xmlChar *key;
 
     key = xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
     printf("threshold: %s\n", key);
-    conf->threshold = atol(key);
+    monitor->threshold = atol(key);
     xmlFree(key);
-    if ((long)conf->threshold < 0) {
+    if ((long)monitor->threshold < 0) {
         return -1;
     }
 
     return 0;
 }
 
-static int krk_config_monitor_script(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur)
+static int krk_config_monitor_script(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur)
 {
     xmlChar *key;
 
@@ -223,25 +223,25 @@ static int krk_config_monitor_script(struct krk_config *conf, xmlDocPtr doc, xml
         xmlFree(key);
         return -1;
     }
-    strcpy(conf->script, key);
+    strcpy(monitor->script, key);
     xmlFree(key);
 
     return 0;
 }
 
-static int krk_config_monitor_node(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur)
+static int krk_config_monitor_node(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur)
 {
-    return krk_config_parse_node(conf, doc, cur);
+    return krk_config_parse_node(monitor, doc, cur);
 }
 
-static int krk_config_monitor_log(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur)
+static int krk_config_monitor_log(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur)
 {
-    return krk_config_parse_log(conf, doc, cur);
+    return krk_config_parse_log(monitor, doc, cur);
 }
 
 struct krk_config_monitor_parser {
     xmlChar *key;
-    int (*paser)(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur);
+    int (*paser)(struct krk_config_monitor *monitor, xmlDocPtr doc, xmlNodePtr cur);
 };
 
 static struct krk_config_monitor_parser krk_monitor_paser[] = {
@@ -257,20 +257,31 @@ static struct krk_config_monitor_parser krk_monitor_paser[] = {
     {"log", krk_config_monitor_log},
 };
 
-#define krk_config_monitor_parser_name (sizeof(krk_monitor_paser)/sizeof(struct krk_config_monitor_parser))
+#define krk_config_monitor_parser_name \
+    (sizeof(krk_monitor_paser)/sizeof(struct krk_config_monitor_parser))
 
-static int krk_config_parse_monitor(struct krk_config *conf, xmlDocPtr doc, xmlNodePtr cur) 
+static int krk_config_parse_monitor(struct krk_config *conf, 
+                xmlDocPtr doc, xmlNodePtr cur) 
 {
     struct krk_config_monitor_parser *paser = NULL;
-    int monitor = 0;
+    struct krk_config_monitor *monitor = NULL; 
+    int p = 0;
     int ret = 0;
+
+    monitor = calloc(1, sizeof(*monitor));
+    if (monitor == NULL) {
+        return -1;
+    }
+
+    monitor->next = conf->monitor;
+    conf->monitor = monitor;
 
 	cur = cur->xmlChildrenNode;
 	while (cur != NULL) {
-        for (monitor = 0; monitor < krk_config_monitor_parser_name; monitor++) {
-            paser = &krk_monitor_paser[monitor];
+        for (p = 0; p < krk_config_monitor_parser_name; p++) {
+            paser = &krk_monitor_paser[p];
             if ((!xmlStrcmp(cur->name, paser->key))) {
-                ret = paser->paser(conf, doc, cur);
+                ret = paser->paser(monitor, doc, cur);
                 if (ret < 0) {
                     return -1;
                 }
@@ -281,20 +292,35 @@ static int krk_config_parse_monitor(struct krk_config *conf, xmlDocPtr doc, xmlN
     return 0;
 }
 
-static void krk_config_free (struct krk_config *conf)
+static void krk_config_monitor_free (struct krk_config_monitor *monitor)
 {
     struct krk_config_node *node = NULL;
     struct krk_config_node *tmp = NULL;
 
-    if (conf->checker_param) {
-        free (conf->checker_param);
+    if (monitor->checker_param) {
+        free(monitor->checker_param);
     }
 
-    node = conf->node; 
+    node = monitor->node; 
     while (node != NULL) {
         tmp = node;
         node = node->next;
-        free (tmp);
+        free(tmp);
+    }
+
+    free(monitor);
+}
+
+static void krk_config_free (struct krk_config *conf)
+{    
+    struct krk_config_monitor *monitor = NULL;
+    struct krk_config_monitor *tmp = NULL;
+
+    monitor = conf->monitor; 
+    while (monitor != NULL) {
+        tmp = monitor;
+        monitor = monitor->next;
+        krk_config_monitor_free(tmp);
     }
 }
 
@@ -366,6 +392,7 @@ out:
     return ret;
 }
 
+#if 0
 static int krk_config_parse_pathname(struct krk_monitor *monitor)
 {
     char *ptr;
@@ -482,3 +509,5 @@ out:
 
     return ret;
 }
+
+#endif
