@@ -36,7 +36,8 @@ unsigned int krk_nr_connections = 0;
  * return address of new connection for success;
  * NULL for failed.
  */
-struct krk_connection* krk_connection_create(const char *name, size_t rbufsz, size_t wbufsz)
+struct krk_connection* 
+krk_connection_create(const char *name, size_t rbufsz, size_t wbufsz)
 {
     struct krk_connection *conn;
 
@@ -77,6 +78,9 @@ struct krk_connection* krk_connection_create(const char *name, size_t rbufsz, si
     list_add_tail(&conn->list, &krk_all_connections);
 
     krk_nr_connections++;
+    
+    conn->recv = krk_connection_recv;
+    conn->send = krk_connection_send;
 
     return conn;
 }
@@ -145,3 +149,64 @@ int krk_connection_exit(void)
 {
     return krk_all_connections_destroy();
 }
+
+/**
+ * krk_connection_ssl_init - init ssl for a connection
+ * @
+ * 
+ * return KRK_OK for success;
+ * KRK_ERROR for failed.
+ */
+int 
+krk_connection_ssl_init(struct krk_connection *conn, struct krk_ssl *ssl)
+{
+    conn->ssl = krk_ssl_create_connection(conn->sock, ssl);
+    if (conn->ssl == NULL) {
+        return KRK_ERROR;
+    }
+
+    return KRK_OK;
+}
+
+/**
+ * krk_connection_ssl_init - init ssl for a connection
+ * @
+ * 
+ * return KRK_OK for success;
+ * KRK_ERROR for failed.
+ * KRK_AGAIN_* for hold on
+ */
+int 
+krk_connection_ssl_handshake(struct krk_connection *conn)
+{
+    int ret;
+    
+    ret = krk_ssl_handshake(conn);
+
+    return ret;
+}
+
+ssize_t 
+krk_connection_recv(struct krk_connection *conn, u_char *buf, size_t size)
+{
+    return recv(conn->sock, buf, size, 0);
+}
+
+ssize_t 
+krk_connection_send(struct krk_connection *conn, u_char *buf, size_t size)
+{
+    return send(conn->sock, buf, size, 0);
+}
+
+ssize_t 
+krk_connection_ssl_recv(struct krk_connection *conn, u_char *buf, size_t size)
+{
+    return krk_ssl_recv(conn->ssl->ssl_connection, buf, size);
+}
+
+ssize_t 
+krk_connection_ssl_send(struct krk_connection *conn, u_char *buf, size_t size)
+{
+    return krk_ssl_send(conn->ssl->ssl_connection, buf, size);
+}
+ 

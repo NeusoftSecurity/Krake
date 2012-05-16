@@ -16,6 +16,13 @@
 #include <krk_core.h>
 #include <krk_list.h>
 
+#include <krk_ssl.h>
+
+struct krk_connection;
+
+typedef ssize_t (*recv_handler)(struct krk_connection *conn, u_char *buf, size_t size);
+typedef ssize_t (*send_handler)(struct krk_connection *conn, u_char *buf, size_t size);
+
 struct krk_connection {
     char name[KRK_NAME_LEN];
 
@@ -25,7 +32,14 @@ struct krk_connection {
     struct list_head list;
     struct list_head node;
 
+    recv_handler recv;
+    send_handler send;
+
+    struct krk_ssl_connection *ssl;
+    
     int sock;
+
+    int ready:1;
 };
 
 extern struct krk_connection* krk_connection_create(const char *name, 
@@ -34,5 +48,14 @@ extern int krk_connection_destroy(struct krk_connection *conn);
 extern int krk_connection_init(void);
 extern int krk_all_connections_destroy(void);
 extern int krk_connection_exit(void);
+
+ssize_t 
+krk_connection_recv(struct krk_connection *conn, u_char *buf, size_t size);
+ssize_t 
+krk_connection_send(struct krk_connection *conn, u_char *buf, size_t size);
+ssize_t 
+krk_connection_ssl_recv(struct krk_connection *conn, u_char *buf, size_t size);
+ssize_t 
+krk_connection_ssl_send(struct krk_connection *conn, u_char *buf, size_t size);
 
 #endif

@@ -25,6 +25,8 @@ static int http_init_node(struct krk_node *node);
 static int http_cleanup_node(struct krk_node *node);
 static int http_process_node(struct krk_node *node, void *param);
 
+static void http_check_ssl_handler(int sock, short type, void *arg);
+
 struct krk_checker http_checker = {
     "http",
     KRK_CHECKER_HTTP,
@@ -54,7 +56,7 @@ static int http_load_send_file(struct http_checker_param *hcp)
     if (size == KRK_MAX_HTTP_SEND) {
         size = read(fd, &tmp, 1);
         if (size != 0) {
-            krk_log(KRK_LOG_INFO, "there are more bytes left in the body, not matched\n");
+            krk_log(KRK_LOG_INFO, "more bytes left in the body, not matched\n");
             close(fd);
             return KRK_ERROR;
         }
@@ -86,7 +88,7 @@ static int http_load_response_file(struct http_checker_param *hcp)
     if (size == KRK_MAX_HTTP_EXPECTED) {
         size = read(fd, &tmp, 1);
         if (size != 0) {
-            krk_log(KRK_LOG_INFO, "there are more bytes left in the body, not matched\n");
+            krk_log(KRK_LOG_INFO, "more bytes left in the body, not matched\n");
             close(fd);
             return KRK_ERROR;
         }
@@ -213,7 +215,8 @@ static int http_parse_param(struct krk_monitor *monitor,
                         }
                         hcp->expected_file_len = i - prev - 1;
                         hcp->expected_in_file = 1;
-                        memcpy(hcp->expected_file, param + prev + 1, hcp->expected_file_len);
+                        memcpy(hcp->expected_file, param + prev + 1, 
+                                hcp->expected_file_len);
                         expected_file_parsed = 1;
 
                         /* load file into memory */
@@ -413,7 +416,7 @@ static void http_read_handler(int sock, short type, void *arg)
             node->buf->head, node->buf->last, node->buf->end);
 
     if (type == EV_READ) {
-        ret = recv(sock, node->buf->last, node->buf->end - node->buf->last, 0);
+        ret = conn->recv(conn, node->buf->last, node->buf->end - node->buf->last);
         if (ret < 0) {
             krk_log(KRK_LOG_DEBUG, "read a http reply, failed: %d\n", ret);
             node->nr_fails++;
@@ -459,14 +462,7 @@ static void http_read_handler(int sock, short type, void *arg)
 
         if (ret == KRK_ERROR) {
             krk_log(KRK_LOG_DEBUG, "http handle responst failed\n");
-            node->nr_fails++;
-            if (node->nr_fails == monitor->threshold) {
-                node->nr_fails = 0;
-                if (!node->down) {
-                    node->down = 1;
-                    krk_monitor_notify(monitor, node);
-                }
-            }
+            krk_monitor_node_failure_inc(monitor, node);
 
             goto out;
         }
@@ -517,7 +513,8 @@ static void http_write_handler(int sock, short type, void *arg)
     struct krk_monitor *monitor;
     struct http_checker_param *hcp;
     void *packet = NULL;
-    int ret;
+    int ret, err;
+    socklen_t errlen;
 
     wev = arg;
     node = wev->data;
@@ -546,17 +543,9 @@ static void http_write_handler(int sock, short type, void *arg)
         conn->rev->timeout->tv_sec = monitor->timeout;
         conn->rev->timeout->tv_usec = 0;
 
-        ret = send(sock, packet, hcp->send_len, 0);
+        ret = conn->send(conn, packet, hcp->send_len);
         if (ret < 0) {
-            node->nr_fails++;
-            if (node->nr_fails == monitor->threshold) {
-                node->nr_fails = 0;
-                if (!node->down) {
-                    node->down = 1;
-                    krk_monitor_notify(monitor, node);
-                }
-            }
-
+            krk_monitor_node_failure_inc(monitor, node);
             goto failed;
         }
 
@@ -564,14 +553,8 @@ static void http_write_handler(int sock, short type, void *arg)
         krk_event_add(conn->rev);
     } else if (type == EV_TIMEOUT) {
         krk_log(KRK_LOG_INFO, "write timeout!\n");
-        node->nr_fails++;
-        if (node->nr_fails == monitor->threshold) {
-            node->nr_fails = 0;
-            if (!node->down) {
-                node->down = 1;
-                krk_monitor_notify(monitor, node);
-            }
-        }
+        
+        krk_monitor_node_failure_inc(monitor, node);
 
         goto failed;
     }
@@ -624,6 +607,178 @@ static int http_cleanup_node(struct krk_node *node)
     return KRK_OK;
 }
 
+static int http_init_ssl(struct krk_node *node, struct krk_connection *conn)
+{
+    struct krk_monitor *monitor;
+    int ret;
+
+    monitor = node->parent;
+
+    if (krk_monitor_init_ssl(monitor) != KRK_OK) {
+        return KRK_ERROR;
+    }
+
+    /* init connection's SSL struct by node's SSL_CTX */
+    if (krk_connection_ssl_init(conn, monitor->ssl) != KRK_OK ) {
+        return KRK_ERROR;
+    }
+
+    /* handshake with the server */
+    ret = krk_connection_ssl_handshake(conn);
+    if (ret == KRK_AGAIN_WRITE) {
+        krk_monitor_add_node_connection(node, conn);
+
+        conn->wev->handler = http_check_ssl_handler;
+
+        conn->wev->data = node;
+
+        conn->wev->timeout->tv_sec = monitor->timeout;
+        conn->wev->timeout->tv_usec = 0;
+        krk_event_set_write(conn->sock, conn->wev);
+        krk_event_add(conn->wev);
+
+        return KRK_AGAIN;
+    } else if (ret == KRK_AGAIN_READ) {
+        krk_monitor_add_node_connection(node, conn);
+
+        conn->rev->handler = http_check_ssl_handler;
+
+        conn->rev->data = node;
+
+        conn->rev->timeout->tv_sec = monitor->timeout;
+        conn->rev->timeout->tv_usec = 0;
+        krk_event_set_read(conn->sock, conn->rev);
+        krk_event_add(conn->rev);
+
+        return KRK_AGAIN;
+    } else if (ret == KRK_ERROR) {
+        return KRK_ERROR;
+    }
+
+    return KRK_OK;
+}
+
+static void http_check_ssl_handler(int sock, short type, void *arg)
+{
+    struct krk_event *ev;
+    struct krk_connection *conn;
+    struct krk_node *node;
+    struct krk_monitor *monitor;
+    int ret;
+    
+    ev = arg;
+    node = ev->data;
+    conn = ev->conn;
+    monitor = node->parent;
+
+    if (type == EV_TIMEOUT) {
+        krk_monitor_node_failure_inc(monitor, node);
+        
+        return;
+    }
+
+    /* TODO: ssl handshake again */
+    ret = krk_connection_ssl_handshake(conn);
+    if (ret == KRK_AGAIN_WRITE) {
+        krk_monitor_add_node_connection(node, conn);
+
+        conn->wev->handler = http_check_ssl_handler;
+
+        conn->wev->data = node;
+
+        conn->wev->timeout->tv_sec = monitor->timeout;
+        conn->wev->timeout->tv_usec = 0;
+        krk_event_set_write(conn->sock, conn->wev);
+        krk_event_add(conn->wev);
+    } else if (ret == KRK_AGAIN_READ) {
+        krk_monitor_add_node_connection(node, conn);
+
+        conn->rev->handler = http_check_ssl_handler;
+
+        conn->rev->data = node;
+
+        conn->rev->timeout->tv_sec = monitor->timeout;
+        conn->rev->timeout->tv_usec = 0;
+        krk_event_set_read(conn->sock, conn->rev);
+        krk_event_add(conn->rev);
+    }
+
+    return;
+}
+
+static void http_check_tcp_handler(int sock, short type, void *arg)
+{
+    struct krk_event *wev;
+    struct krk_connection *conn;
+    struct krk_node *node;
+    struct krk_monitor *monitor;
+    int err, ret;
+    socklen_t errlen;
+    
+    wev = arg;
+    node = wev->data;
+    conn = wev->conn;
+    monitor = node->parent;
+
+    if (type == EV_WRITE) {
+        errlen = sizeof(err);
+        ret = getsockopt(conn->sock, SOL_SOCKET, SO_ERROR, &err, &errlen);
+        if (ret == 0) {
+            if (err != 0) {
+                krk_log(KRK_LOG_DEBUG, "http: tcp connect failed(%d)!\n", errno);
+                
+                krk_monitor_node_failure_inc(monitor, node);
+
+                return;
+            }
+        }
+    } else if (type == EV_TIMEOUT) {
+        krk_log(KRK_LOG_DEBUG, "http: tcp connect failed(time out)!\n");
+        
+        krk_monitor_node_failure_inc(monitor, node);
+
+        return;
+    }
+
+    /* connect ok */
+
+    /* TODO: handle ssl */
+    if (monitor->ssl_flag) {
+        ret = http_init_ssl(node, conn);
+        if (ret == KRK_ERROR) {
+            krk_monitor_node_failure_inc(monitor, node);
+            return;
+        }
+        
+        if (ret == KRK_AGAIN) {
+            return;
+        }
+
+        /* ret == KRK_OK */
+
+        conn->recv = krk_connection_ssl_recv;
+        conn->send = krk_connection_ssl_send;
+    } else {
+        conn->recv = krk_connection_recv;
+        conn->send = krk_connection_send;
+    }
+
+    krk_monitor_add_node_connection(node, conn);
+    
+    conn->rev->handler = http_read_handler;
+    conn->wev->handler = http_write_handler;
+
+    conn->rev->data = node;
+    conn->wev->data = node;
+
+    conn->wev->timeout->tv_sec = monitor->timeout;
+    conn->wev->timeout->tv_usec = 0;
+    krk_event_set_write(conn->sock, conn->wev);
+    krk_event_add(conn->wev);
+
+    return;
+}
+
 static int http_process_node(struct krk_node *node, void *param)
 {
     int sock, ret;
@@ -644,37 +799,73 @@ static int http_process_node(struct krk_node *node, void *param)
     }
 
     conn->sock = sock;
-    conn->rev->handler = http_read_handler;
-    conn->wev->handler = http_write_handler;
-
-    conn->rev->data = node;
-    conn->wev->data = node;
-
     monitor = node->parent;
 
     ret = connect(conn->sock, (struct sockaddr*)&node->inaddr, 
             sizeof(struct sockaddr));
     if (ret < 0 && errno != EINPROGRESS) {
         krk_connection_destroy(conn);
+        krk_monitor_node_failure_inc(monitor, node);
+        return KRK_ERROR;
+    }
+    
+    conn->wev->timeout = malloc(sizeof(struct timeval));
+    if (!conn->wev->timeout) {
+        krk_connection_destroy(conn);
         return KRK_ERROR;
     }
 
     if (errno == EINPROGRESS) {
-        conn->wev->timeout = malloc(sizeof(struct timeval));
-        if (!conn->wev->timeout) {
-            krk_connection_destroy(conn);
-            return KRK_ERROR;
-        }
+        conn->wev->handler = http_check_tcp_handler;
+
+        conn->rev->data = node;
+        conn->wev->data = node;
 
         conn->wev->timeout->tv_sec = monitor->timeout;
         conn->wev->timeout->tv_usec = 0;
         krk_event_set_write(conn->sock, conn->wev);
         krk_event_add(conn->wev);
+
+        return KRK_AGAIN;
     }
 
     /* ret == 0, connect ok */
+    
+    conn->ready = 1;
+
+    /* TODO: if ssl enabled, handshake ssl here */
+    if (monitor->ssl_flag) {
+        ret = http_init_ssl(node, conn);
+        if (ret == KRK_ERROR) {
+            krk_monitor_node_failure_inc(monitor, node);
+            return ret;
+        }
+        
+        if (ret == KRK_AGAIN) {
+            return ret;
+        }
+
+        /* ret == KRK_OK */
+
+        conn->recv = krk_connection_ssl_recv;
+        conn->send = krk_connection_ssl_send;
+    } else {
+        conn->recv = krk_connection_recv;
+        conn->send = krk_connection_send;
+    }
 
     krk_monitor_add_node_connection(node, conn);
+    
+    conn->rev->handler = http_read_handler;
+    conn->wev->handler = http_write_handler;
+
+    conn->rev->data = node;
+    conn->wev->data = node;
+
+    conn->wev->timeout->tv_sec = monitor->timeout;
+    conn->wev->timeout->tv_usec = 0;
+    krk_event_set_write(conn->sock, conn->wev);
+    krk_event_add(conn->wev);
 
     return KRK_OK;
 }

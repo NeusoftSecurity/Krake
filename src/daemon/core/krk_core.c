@@ -126,6 +126,8 @@ static inline int __krk_smooth_quit(void)
 
     krk_connection_exit();
 
+    krk_ssl_exit();
+
     krk_event_exit();
 
     krk_log_exit();
@@ -226,12 +228,17 @@ int main(int argc, char* argv[])
     }
 
     if (krk_local_socket_init()) {
-        krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
+        krk_log(KRK_LOG_ALERT, "Fatal: init local socket failed\n");
+        return 1;
+    }
+
+    if (krk_ssl_init()) {
+        krk_log(KRK_LOG_ALERT, "Fatal: init ssl failed\n");
         return 1;
     }
 
     if (krk_monitor_init()) {
-        krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
+        krk_log(KRK_LOG_ALERT, "Fatal: init monitor failed\n");
         return 1;
     }
 

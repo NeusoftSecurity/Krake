@@ -164,7 +164,7 @@ int krk_socket_tcp_connect(int sock, struct krk_node *node)
 {
     int ret;
 
-    if (node->ssl) {
+    if (0) {
     } else {
         ret = connect(sock, (struct sockaddr*)&node->inaddr, 
                 sizeof(struct sockaddr));

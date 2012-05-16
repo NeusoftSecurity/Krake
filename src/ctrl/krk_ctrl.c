@@ -31,6 +31,7 @@
 #define KRK_OPTION_LOG 12
 #define KRK_OPTION_LOG_TYPE 13
 #define KRK_OPTION_LOG_LEVEL 14
+#define KRK_OPTION_SSL 15
 
 
 static const struct option optlong[] = {
@@ -55,6 +56,7 @@ static const struct option optlong[] = {
     {"log", 0, NULL, KRK_OPTION_LOG},
     {"logtype", 1, NULL, KRK_OPTION_LOG_TYPE},
     {"loglevel", 1, NULL, KRK_OPTION_LOG_LEVEL},
+    {"ssl", 0, NULL, KRK_OPTION_SSL},
     {NULL, 0, NULL, 0}
 };
 
@@ -84,8 +86,9 @@ static void krk_ctrl_usage(void)
             "\t-A, --add		add a node to a monitor\n"
             "\t-R, --remove		remove a node from a monitor\n"
             "\t-S, --show		show the configuration of a monitor\n"
-            "\t--enable		enable a monitor, this option starts the monitor's timer\n"
+            "\t--enable		        enable a monitor, this option starts the monitor's timer\n"
             "\t--disable		disable a monitor, this option stops the monitor's timer\n"
+            "\t--ssl			enable ssl support for this checker\n"
             "\t--log			set logging attributes\n"
             "\t--logtype		set the type of logs that krake sends, value can be file, syslog\n"
             "\t--loglevel		set the level of logs, under which the logs will not be sent out\n"
@@ -96,10 +99,10 @@ static void krk_ctrl_usage(void)
             "\t--interval		interval of monitor's timer in seconds\n"
             "\t--timeout		time out value of checked host in seconds\n"
             "\t--threshold		how many times of failures happens, marking host as down\n"
-            "\t--node		ip address of a checked host, either ipv4 or ipv6 address is valid\n"
-            "\t--port		port number of a checked host, range is 1 ~ 65535\n"
-            "\t--script		failure notification, if user specify this option, \n"
-            "\t        		when a failure of a checked host is deteceted, krake will call this script\n"
+            "\t--node		        ip address of a checked host, either ipv4 or ipv6 address is valid\n"
+            "\t--port		        port number of a checked host, range is 1 ~ 65535\n"
+            "\t--script		        failure notification, if user specify this option, \n"
+            "\t        		        when a failure of a checked host is deteceted, krake will call this script\n"
             );
     krk_ctrl_tail();
 }
@@ -369,6 +372,13 @@ int main(int argc, char* argv[])
                 if (config->type == KRK_CONF_TYPE_LOG) {
                     strncpy(config->log_level, optarg, KRK_ARG_LEN);
                     config->log_level[KRK_ARG_LEN - 1] = 0;
+                } else {
+                    goto failed;
+                }
+                break;
+            case KRK_OPTION_SSL:
+                if (config->type == KRK_CONF_TYPE_MONITOR) {
+                    config->ssl = 1;
                 } else {
                     goto failed;
                 }

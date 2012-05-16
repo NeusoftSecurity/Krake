@@ -131,18 +131,14 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
 
         if (tmp->ready) {
             ret = monitor->checker->process_node(tmp, monitor->checker_param);
-            if (ret != KRK_OK) {
-                tmp->nr_fails++;
-                if (tmp->nr_fails == monitor->threshold) {
-                    tmp->nr_fails = 0;
-                    if (!tmp->down) {
-                        krk_log(KRK_LOG_DEBUG, "mark node as down\n");
-                        tmp->down = 1;
-                        krk_monitor_notify(monitor, tmp);
-                    }
-                }
-            } else {
-            }
+            if (ret == KRK_ERROR) {
+                /* TODO: just log, do nothing */
+            } else if (ret == KRK_OK) {
+                /* TODO: just log, do nothing */
+            } else if (ret == KRK_AGAIN) {
+                /* TODO: just log, do nothing */
+            } 
+
             krk_log(KRK_LOG_INFO, "node %s:%d, nr_fails: %u\n", 
                     tmp->addr, tmp->port, tmp->nr_fails); 
         }
@@ -477,7 +473,7 @@ int krk_monitor_remove_node(struct krk_monitor *monitor,
     return KRK_OK;
 }
 
-int krk_mointor_set_node_status(struct krk_monitor *monitor, 
+int krk_monitor_set_node_status(struct krk_monitor *monitor, 
         unsigned char id, int status)
 {
     struct krk_node *node;
@@ -490,6 +486,16 @@ int krk_mointor_set_node_status(struct krk_monitor *monitor,
     node->down = status;
 
     return KRK_OK;
+}
+
+int krk_monitor_init_ssl(struct krk_monitor *monitor)
+{
+    monitor->ssl = krk_ssl_new_ctx();
+    if (!monitor->ssl) {
+        return KRK_ERROR;
+    }
+
+    return krk_ssl_init_ctx(monitor->ssl);
 }
 
 int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
@@ -575,4 +581,22 @@ int krk_monitor_init(void)
 int krk_monitor_exit(void)
 {
     return krk_all_monitors_destroy();
+}
+
+void krk_monitor_node_failure_inc(struct krk_monitor *monitor, 
+        struct krk_node *node)
+{
+    node->nr_fails++;
+    if (node->nr_fails == monitor->threshold) {
+        node->nr_fails = 0;
+        if (!node->down) {
+            node->down = 1;
+            krk_monitor_notify(monitor, node);
+        }
+    }
+}
+
+void krk_monitor_node_success_inc(struct krk_monitor *monitor, 
+        struct krk_node *node)
+{
 }

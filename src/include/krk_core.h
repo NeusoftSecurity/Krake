@@ -35,6 +35,8 @@
 #define KRK_AGAIN -2
 #define KRK_BUSY -3
 #define KRK_DONE -4
+#define KRK_AGAIN_READ -5
+#define KRK_AGAIN_WRITE -6
 
 #define KRK_NAME_LEN 64
 #define KRK_IPADDR_LEN 64

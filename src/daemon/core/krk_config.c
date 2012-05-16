@@ -30,6 +30,7 @@ static inline void krk_config_show_content(struct krk_config *conf)
     krk_log(KRK_LOG_DEBUG, "\tchecker: %s\n", conf->checker);
     krk_log(KRK_LOG_DEBUG, "\tchecker_param: %s\n", conf->checker_param);
     krk_log(KRK_LOG_DEBUG, "\tchecker_param_len: %lu\n", conf->checker_param_len);
+    krk_log(KRK_LOG_DEBUG, "\tssl: %lu\n", conf->ssl);
     krk_log(KRK_LOG_DEBUG, "\tinterval: %lu\n", conf->interval);
     krk_log(KRK_LOG_DEBUG, "\ttimeout: %lu\n", conf->timeout);
     krk_log(KRK_LOG_DEBUG, "\tthreshold: %lu\n", conf->threshold);
@@ -155,6 +156,12 @@ static int krk_config_parse(struct krk_config *conf)
             monitor->interval = conf->interval;
             monitor->timeout = conf->timeout;
             monitor->threshold = conf->threshold;
+
+            monitor->ssl_flag = conf->ssl;
+            if (krk_monitor_init_ssl(monitor) != KRK_OK) {
+                ret = KRK_ERROR;
+                goto out;
+            }
 
             if (conf->script[0]) {
                 strncpy(monitor->notify_script, conf->script, KRK_NAME_LEN);

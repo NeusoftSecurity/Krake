@@ -78,14 +78,7 @@ static void tcp_write_handler(int sock, short type, void *arg)
         krk_log(KRK_LOG_DEBUG, "write timeout!\n");
     }
 
-    node->nr_fails++;
-    if (node->nr_fails == monitor->threshold) {
-        node->nr_fails = 0;
-        if (!node->down) {
-            node->down = 1;
-            krk_monitor_notify(monitor, node);
-        }
-    }
+    krk_monitor_node_failure_inc(monitor, node);
 
 ok:
     krk_monitor_remove_node_connection(node, conn);
@@ -142,6 +135,8 @@ static int tcp_process_node(struct krk_node *node, void *param)
             sizeof(struct sockaddr));
     if (ret < 0 && errno != EINPROGRESS) {
         krk_connection_destroy(conn);
+        krk_monitor_node_failure_inc(monitor, node);
+        
         return KRK_ERROR;
     }
 
