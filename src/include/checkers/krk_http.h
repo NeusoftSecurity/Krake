@@ -24,7 +24,7 @@ extern struct krk_checker http_checker;
 #define KRK_MAX_HTTP_EXPECTED_FILE 128
 
 #define HTTP_CONTENT_STRING "Content-Length: "
-#define HTTP_DEFAULT_REQUEST "GET / HTTP/1.1\r\nConnection: close\r\n\r\n"
+#define HTTP_DEFAULT_REQUEST "GET / HTTP/1.0\r\nHost: test\r\nConnection: close\r\n\r\n"
 
 /* http specific command */
 #define HTTP_PARSE_SEND 0
