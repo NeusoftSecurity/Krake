@@ -54,6 +54,9 @@ fi
 LXML2=""
 AC_CHECK_LIB([xml2], [xmlDocGetRootElement], , LXML2="no")
 
+PTHREAD
+AC_CHECK_LIB([pthread], [pthread_create], , PTHREAD="no")
+
 # Checks for header files.
 LEVENT=""
 AC_CHECK_HEADERS([event.h], , LEVENT="no")

@@ -23,15 +23,18 @@
 static const struct option optlong[] = {
     {"help", 0, NULL, 'h'},
     {"version", 0, NULL, 'v'},
+    {"config", 0, NULL, 'c'},
+    {"reload", 0, NULL, 'r'},
     {NULL, 0, NULL, 0}
 };
 
-static const char* optstring = "hvc:";
+static const char* optstring = "hvrc:";
 
 static void krk_usage(void)
 {
     printf("Usage: krake [option]\n"
             "\t--config/-c		assign the configruation file\n"
+            "\t--reload/-r		reload the configruation file\n"
             "\t--version/-v		Show Krake version\n"
             "\t--help/-h		Show this help\n");
 }
@@ -114,6 +117,31 @@ static inline int krk_create_pid_file(void)
     return 0;
 }
 
+static inline pid_t krk_get_daemon_pid(void)
+{
+    pid_t pid;
+    int n;
+    int fd = 0;
+
+    fd = open(PID_FILE, O_RDONLY, S_IRUSR | S_IWUSR);
+
+    if (fd < 0) {
+        fprintf(stderr, "Fatal: krake already running\n");
+        return -1;
+    }
+
+    n = read(fd, &pid, sizeof(pid));
+    if (n != sizeof(pid)) {
+        fprintf(stderr, "Fatal: write pid file failed\n");
+        close(fd);
+        return -1;
+    }
+
+    close(fd);
+
+    return pid;
+}
+
 /** 
  * should I move the signal related functions 
  * into a new file? 
@@ -157,6 +185,24 @@ static inline void krk_child_quit(int signo)
     }
 }
 
+#define KRK_CONFIG_FILE_NAME_LEN 200
+
+static char config_file[KRK_CONFIG_FILE_NAME_LEN] = {};
+
+void *krk_reload_config_proc(void *arg)
+{
+    krk_config_load(config_file);
+
+    return NULL;
+}
+
+static inline void krk_reload_config(int signo)
+{
+    pthread_t thread_id;
+
+    pthread_create(&thread_id, NULL, krk_reload_config_proc, NULL);
+}
+
 static inline void krk_signals(void)
 {
     signal(SIGINT, krk_smooth_quit);	
@@ -166,13 +212,12 @@ static inline void krk_signals(void)
     signal(SIGSEGV, krk_smooth_quit);
     signal(SIGBUS, krk_smooth_quit);
     signal(SIGCHLD, krk_child_quit);
+    signal(SIGUSR1, krk_reload_config);
 }
-
-#define KRK_CONFIG_FILE_NAME_LEN 200
 
 int main(int argc, char* argv[])
 {
-    char config_file[KRK_CONFIG_FILE_NAME_LEN] = {};
+    pid_t pid;
     int opt, quit = 0;
 
     while (1) {
@@ -196,20 +241,23 @@ int main(int argc, char* argv[])
                 }
                 strcpy(config_file, optarg);
                 break;
+            case 'r':
+                pid = krk_get_daemon_pid();
+                if (pid < 0) {
+                    printf("Reload configuration failed!\n");
+                    return -1;
+                }
+                kill(pid, SIGUSR1);
+                return 0;
             default:
                 /* never could be here */
                 break;
         }
     }
 
-    if (quit)
+    if (quit) {
         return 0;
-
-    if (krk_config_load(config_file)) {
-        fprintf(stderr, "Fatal: failed to load configuration file!\n");
-        return 1;
     }
-    return 0;
 
     /* daemonize myself */
     if (krk_daemonize()) {
@@ -227,24 +275,34 @@ int main(int argc, char* argv[])
 
     if (krk_log_init()) {
         fprintf(stderr, "Fatal: init log failed\n");
+        krk_remove_pid_file();
         return 1;
     }
 
     if (krk_connection_init()) {
         krk_log(KRK_LOG_ALERT, "Fatal: init connection failed\n");
+        krk_remove_pid_file();
         return 1;
     }
 
     if (krk_event_init()) {
         krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
+        krk_remove_pid_file();
         return 1;
     }
 
     if (krk_monitor_init()) {
         krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
+        krk_remove_pid_file();
         return 1;
     }
 
+    if (krk_config_load(config_file)) {
+        krk_log(KRK_LOG_ALERT, "Fatal: failed to load configuration file!\n");
+        krk_remove_pid_file();
+        return 1;
+    }
+    
     krk_log(KRK_LOG_NOTICE, "krake started\n");
     krk_event_loop();
 

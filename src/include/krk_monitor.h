@@ -18,10 +18,12 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 #include <krk_core.h>
 #include <krk_list.h>
 #include <krk_event.h>
+#include <krk_config.h>
 #include <krk_connection.h>
 #include <checkers/krk_checker.h>
 
@@ -31,6 +33,7 @@
 
 struct krk_monitor {
     char name[KRK_NAME_LEN];
+    pthread_mutex_t mutex;
     unsigned char id;
 
     struct list_head list;
@@ -86,6 +89,7 @@ struct krk_node {
 extern struct krk_monitor* krk_monitor_find(const char *name);
 extern struct krk_monitor* krk_monitor_create(const char *name);
 extern int krk_monitor_destroy(struct krk_monitor *monitor);
+extern int krk_remove_unused_monitor(struct krk_config *conf);
 extern int krk_monitor_init(void);
 extern int krk_all_monitors_destroy(void);
 extern int krk_monitor_exit(void);
@@ -93,6 +97,7 @@ extern int krk_monitor_add_node(struct krk_monitor *monitor,
         struct krk_node *node);
 extern int krk_monitor_remove_node(struct krk_monitor *monitor, 
         struct krk_node *node);
+extern int krk_remove_unused_node(struct krk_config_monitor *conf_monitor, struct krk_monitor *monitor);
 extern void krk_monitor_enable(struct krk_monitor *monitor);
 extern void krk_monitor_disable(struct krk_monitor *monitor);
 extern struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port);

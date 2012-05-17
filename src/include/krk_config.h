@@ -26,8 +26,9 @@
 #define KRK_CONF_MONITOR_TIMEOUT        0x020
 #define KRK_CONF_MONITOR_THRESHOLD      0x040
 #define KRK_CONF_MONITOR_SCRIPT         0x080
-#define KRK_CONF_MONITOR_LOGTYPE        0x100
-#define KRK_CONF_MONITOR_LOGLEVEL       0x200
+#define KRK_CONF_MONITOR_LOG            0x100
+#define KRK_CONF_MONITOR_LOGTYPE        0x200
+#define KRK_CONF_MONITOR_LOGLEVEL       0x400
 
 #define KRK_CONF_MONITOR_NODE_HOST      0x01
 #define KRK_CONF_MONITOR_NODE_PORT      0x02
@@ -47,8 +48,6 @@ struct krk_config_node {
     unsigned int config;
     char addr[KRK_IPADDR_LEN]; /* only accept ip address */
     unsigned short port;
-
-    unsigned int down:1;
 };
 
 struct krk_config_monitor {
@@ -66,17 +65,20 @@ struct krk_config_monitor {
     unsigned long timeout;
     unsigned long threshold;
 
-    /* log */
-    char log_type[KRK_ARG_LEN];
-    char log_level[KRK_ARG_LEN];
-
     /* args of node */
     struct krk_config_node *node;
-    unsigned long node_num;
+};
+
+struct krk_config_log {
+    unsigned int config;
+    char log_type[KRK_ARG_LEN];
+    char log_level[KRK_ARG_LEN];
 };
 
 struct krk_config {
+    unsigned int config;
     struct krk_config_monitor *monitor;
+    struct krk_config_log log;
 };
 
 struct krk_config_ret {
