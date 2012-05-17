@@ -64,6 +64,8 @@ static inline int krk_daemonize(void)
 
     umask(0);
 
+    fclose(stderr);
+
     return 0;
 }
 
