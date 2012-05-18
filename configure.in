@@ -54,7 +54,7 @@ fi
 LXML2=""
 AC_CHECK_LIB([xml2], [xmlDocGetRootElement], , LXML2="no")
 
-PTHREAD
+PTHREAD=""
 AC_CHECK_LIB([pthread], [pthread_create], , PTHREAD="no")
 
 # Checks for header files.
@@ -75,6 +75,7 @@ fi
 # Checks for library functions.
 
 AC_CONFIG_FILES([Makefile
+                 config/Makefile
                  src/Makefile
                  src/daemon/Makefile])
-AC_OUTPUT
+AC_OUTPUT(config_layout.h)

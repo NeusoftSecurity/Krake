@@ -119,6 +119,7 @@ extern struct krk_node* krk_monitor_find_node_by_id(const unsigned char id,
         struct krk_monitor *monitor);
 extern int krk_mointor_set_node_status(struct krk_monitor *monitor, 
         unsigned char id, int status);
+extern void krk_monitor_show(void);
 extern int krk_monitor_get_all_monitors(struct krk_monitor *monitors);
 extern int krk_monitor_destroy_all_nodes(struct krk_monitor *monitor);
 

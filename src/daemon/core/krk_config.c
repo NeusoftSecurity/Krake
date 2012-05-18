@@ -74,9 +74,8 @@ static int krk_config_parse_first(struct krk_config_param *param,
     return KRK_OK;
 }
 
-static int krk_config_parse_xml_node(struct krk_config_param *param,
-                    struct krk_config_parser *conf_parser, int parser_num,
-                    void *arg, xmlDocPtr doc, xmlNodePtr cur) 
+static int krk_config_parse_xml_node(struct krk_config_parser *conf_parser, 
+                    int parser_num, void *arg, xmlDocPtr doc, xmlNodePtr cur) 
 {
     struct krk_config_parser *c_parser = NULL;
     int p = 0;
@@ -164,7 +163,7 @@ static int krk_config_node_parse(struct krk_config_param *param, void *arg,
     node->next = monitor->node;
     monitor->node = node;
 
-    return krk_config_parse_xml_node(param, krk_node_parser, 
+    return krk_config_parse_xml_node(krk_node_parser, 
                     krk_config_node_parser_num, node, doc, cur);
 }
 
@@ -209,7 +208,7 @@ static int krk_config_log_parse(struct krk_config_param *param, void *arg,
         conf->config |= param->cmd_label;
     }
 
-    return krk_config_parse_xml_node(param, krk_log_parser, 
+    return krk_config_parse_xml_node(krk_log_parser, 
                     krk_config_log_parser_num, &conf->log, doc, cur);
 }
 
@@ -283,7 +282,7 @@ static int krk_config_monitor_checker_param(struct krk_config_param *param, void
     if (monitor->checker_param == NULL) {
         return KRK_ERROR;
     }
-    strcpy(monitor->checker_param, config_value);
+    strncpy(monitor->checker_param, config_value, param_len);
     monitor->checker_param_len = param_len;
 
     return KRK_OK;
@@ -428,7 +427,7 @@ static int krk_config_monitor_parse(struct krk_config_param *param, void *arg,
     monitor->next = conf->monitor;
     conf->monitor = monitor;
 
-    return krk_config_parse_xml_node(param, krk_monitor_parser, 
+    return krk_config_parse_xml_node(krk_monitor_parser, 
                     krk_config_monitor_parser_num, monitor, doc, cur);
 }
 
@@ -500,41 +499,11 @@ static int krk_config_parse(char *config_file, struct krk_config *conf)
 		return KRK_ERROR;
     }
 
-    ret = krk_config_parse_xml_node(NULL, krk_parser, krk_config_parser_num, 
+    ret = krk_config_parse_xml_node(krk_parser, krk_config_parser_num, 
                         conf, xml_file, cur);
 
 	xmlFreeDoc(xml_file);
 	return ret;
-}
-
-static void krk_config_display(struct krk_config *conf) 
-{
-#if 0
-    struct krk_config_monitor *monitor = NULL; 
-    struct krk_config_node *node = NULL; 
-
-    monitor = conf->monitor;
-    while (monitor != NULL) {
-        printf("status:%d\n",monitor->enable);
-        printf("monitor name:%s\n",monitor->monitor);
-        printf("checker:%s\n",monitor->checker);
-        printf("checker-param:%s\n",monitor->checker_param);
-        printf("param len:%lu\n",monitor->checker_param_len);
-        printf("script:%s\n",monitor->script);
-        printf("interval:%lu\n",monitor->interval);
-        printf("timeout:%lu\n",monitor->timeout);
-        printf("threshold:%lu\n",monitor->threshold);
-        node = monitor->node;
-        while (node != NULL) {
-            printf("addr:%s\n",node->addr);
-            printf("port:%d\n",node->port);
-            node = node->next;
-        }
-        monitor = monitor->next;
-    }
-    printf("log_type:%s\n",conf->log.log_type);
-    printf("log_level:%s\n",conf->log.log_level);
-#endif
 }
 
 static int krk_config_parse_pathname(struct krk_monitor *monitor)
@@ -726,8 +695,6 @@ static int krk_config_process(struct krk_config *conf)
     struct krk_config_monitor *conf_monitor = NULL; 
     struct krk_monitor *monitor = NULL; 
     int ret = KRK_OK;
-
-    krk_config_display(conf);
 
     ret = krk_config_process_log(&conf->log);
     if (ret == KRK_ERROR) {

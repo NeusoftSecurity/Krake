@@ -13,6 +13,7 @@
  */
 
 #include <config.h>
+#include <config_layout.h>
 #include <krk_core.h>
 #include <krk_socket.h>
 #include <krk_event.h>
@@ -28,13 +29,14 @@ static const struct option optlong[] = {
     {NULL, 0, NULL, 0}
 };
 
-static const char* optstring = "hvrc:";
+static const char* optstring = "hvrsc:";
 
 static void krk_usage(void)
 {
     printf("Usage: krake [option]\n"
-            "\t--config/-c		assign the configruation file\n"
-            "\t--reload/-r		reload the configruation file\n"
+            "\t--config/-c		Assign the configruation file\n"
+            "\t--reload/-r		Reload the configruation file\n"
+            "\t--show/-s		Show the configruation\n"
             "\t--version/-v		Show Krake version\n"
             "\t--help/-h		Show this help\n");
 }
@@ -126,7 +128,7 @@ static inline pid_t krk_get_daemon_pid(void)
     fd = open(PID_FILE, O_RDONLY, S_IRUSR | S_IWUSR);
 
     if (fd < 0) {
-        fprintf(stderr, "Fatal: krake already running\n");
+        fprintf(stderr, "Fatal: get pid failed!\n");
         return -1;
     }
 
@@ -201,6 +203,13 @@ static inline void krk_reload_config(int signo)
     pthread_t thread_id;
 
     pthread_create(&thread_id, NULL, krk_reload_config_proc, NULL);
+    pthread_join(thread_id, NULL);
+    printf("%s after reload---------------------------------------------------\n",__FUNCTION__);
+}
+
+static inline void krk_show_config(int signo)
+{
+    krk_monitor_show();
 }
 
 static inline void krk_signals(void)
@@ -213,12 +222,15 @@ static inline void krk_signals(void)
     signal(SIGBUS, krk_smooth_quit);
     signal(SIGCHLD, krk_child_quit);
     signal(SIGUSR1, krk_reload_config);
+    signal(SIGUSR2, krk_show_config);
 }
 
 int main(int argc, char* argv[])
 {
     pid_t pid;
     int opt, quit = 0;
+
+    strncpy(config_file, KRK_DEFAULT_CONF, KRK_CONFIG_FILE_NAME_LEN);
 
     while (1) {
         opt = getopt_long(argc, argv, optstring, optlong, NULL);
@@ -249,6 +261,15 @@ int main(int argc, char* argv[])
                 }
                 kill(pid, SIGUSR1);
                 return 0;
+            case 's':
+                pid = krk_get_daemon_pid();
+                if (pid < 0) {
+                    printf("Show configuration failed!\n");
+                    return -1;
+                }
+                kill(pid, SIGUSR2);
+                return 0;
+            
             default:
                 /* never could be here */
                 break;
@@ -267,6 +288,7 @@ int main(int argc, char* argv[])
 
     /* pid file must be handled after daemonize */
     if(krk_create_pid_file()) {
+        fprintf(stderr, "Fatal: create pid file failed!\n");
         return 1;
     }
 
@@ -306,6 +328,7 @@ int main(int argc, char* argv[])
     krk_log(KRK_LOG_NOTICE, "krake started\n");
     krk_event_loop();
 
+    krk_monitor_show();
     /* quit */
     if (__krk_smooth_quit()) {
         krk_log(KRK_LOG_ALERT, "Fatal: smooth quit failed\n");
