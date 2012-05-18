@@ -531,90 +531,6 @@ static int krk_config_process_log(struct krk_config_log *log)
     return krk_log_set_type(log->log_type, log->log_level);
 }
 
-static int krk_config_new_monitor(struct krk_config_monitor *conf_monitor) 
-{
-    struct krk_monitor *monitor = NULL;
-    struct krk_checker *checker = NULL;
-    struct krk_config_node *c_node = NULL;
-    struct krk_node *node = NULL;
-    int ret = KRK_OK;
-
-    monitor = krk_monitor_create(conf_monitor->monitor);
-    if (monitor == NULL) {
-        printf("create monitor failed!\n");
-        ret = KRK_ERROR;
-        goto out;
-    }
-
-    monitor->interval = conf_monitor->interval;
-    monitor->timeout = conf_monitor->timeout;
-    monitor->threshold = conf_monitor->threshold;
-
-    if (!strcmp(conf_monitor->checker, "https")) {
-        monitor->ssl_flag = 1;
-        if (krk_monitor_init_ssl(monitor) != KRK_OK) {
-            ret = KRK_ERROR;
-            goto out;
-        }
-        strncpy(conf_monitor->checker, "http",KRK_NAME_LEN);
-    }
-
-    if (conf_monitor->script[0]) {
-        strncpy(monitor->notify_script, conf_monitor->script, KRK_NAME_LEN);
-        monitor->notify_script[KRK_NAME_LEN - 1] = 0;
-        ret = krk_config_parse_pathname(monitor);
-        if (ret != KRK_OK) {
-            printf("parse pathname failed!\n");
-            goto out;
-        }
-    }
-
-    checker = krk_checker_find(conf_monitor->checker);
-    if (checker == NULL) {
-        printf("find checker failed!\n");
-        ret = KRK_ERROR;
-        goto out;
-    }
-
-    monitor->checker = checker;
-
-    if (checker->parse_param) {
-        ret = checker->parse_param(monitor, conf_monitor->checker_param, 
-                conf_monitor->checker_param_len);
-        if (ret != KRK_OK) {
-            printf("parse param failed!\n");
-            goto out;
-        }
-    }
-
-    c_node = conf_monitor->node;
-    while (c_node != NULL) {
-        node = krk_monitor_create_node(c_node->addr, c_node->port);
-        if (node == NULL) {
-            printf("create node failed!\n");
-            ret = KRK_ERROR;
-            goto out;
-        }
-
-        ret = krk_monitor_add_node(monitor, node);
-        if (ret == KRK_ERROR) {
-            printf("add node failed!\n");
-            goto out;
-        }
-
-        c_node = c_node->next;
-    }
-    
-    if (conf_monitor->enable) {
-        krk_monitor_enable(monitor);
-    } else {
-        krk_monitor_disable(monitor);
-    }
-
-out:
-    return ret;
-}
-
 static int krk_config_update_node(struct krk_config_node *conf_node, 
                     struct krk_node *node) 
 {
@@ -702,10 +618,29 @@ static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor,
         conf_node = conf_node->next;
     }
 
+    if (conf_monitor->enable) {
+        krk_monitor_enable(monitor);
+    } else {
+        krk_monitor_disable(monitor);
+    }
+
 out:
     pthread_mutex_unlock(&monitor->mutex);
 
     return ret;
+}
+
+static int krk_config_new_monitor(struct krk_config_monitor *conf_monitor) 
+{
+    struct krk_monitor *monitor = NULL;
+
+    monitor = krk_monitor_create(conf_monitor->monitor);
+    if (monitor == NULL) {
+        printf("create monitor failed!\n");
+        return KRK_ERROR;
+    }
+
+    return krk_config_update_monitor(conf_monitor, monitor);
 }
 
 static int krk_config_process(struct krk_config *conf) 
