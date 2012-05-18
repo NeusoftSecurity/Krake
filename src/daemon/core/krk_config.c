@@ -341,7 +341,8 @@ static int krk_config_monitor_timeout(struct krk_config_param *param, void *arg,
     }
 
     monitor->timeout = atol(config_value);
-    if ((long)monitor->timeout < 0) {
+    if (((long)monitor->timeout < 0)
+            || (monitor->interval <= monitor->timeout)) {
         return KRK_ERROR;
     }
 
