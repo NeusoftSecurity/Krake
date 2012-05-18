@@ -47,7 +47,7 @@ AC_ARG_WITH(libxml2_libraries,
 			[with_libxml2_libraries="$withval"],
 			[with_libxml2_libraries=no])
 
-CPPFLAGS="${CPPFLAGS} -I/usr/local/include"
+CPPFLAGS="${CPPFLAGS} -I/usr/local/include -I/usr/local/include/libxml2 -I/usr/include/libxml2"
 
 if test "$with_libevent_includes" != "no"; then
 	CPPFLAGS="${CPPFLAGS} -I${with_libevent_includes}"
