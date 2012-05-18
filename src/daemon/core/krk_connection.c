@@ -181,7 +181,7 @@ krk_connection_ssl_handshake(struct krk_connection *conn)
 {
     int ret;
     
-    ret = krk_ssl_handshake(conn);
+    ret = krk_ssl_handshake(conn->ssl);
 
     return ret;
 }

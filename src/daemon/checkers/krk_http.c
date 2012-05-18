@@ -614,9 +614,11 @@ static int http_init_ssl(struct krk_node *node, struct krk_connection *conn)
 
     monitor = node->parent;
 
+    /*
     if (krk_monitor_init_ssl(monitor) != KRK_OK) {
         return KRK_ERROR;
     }
+    */
 
     /* init connection's SSL struct by node's SSL_CTX */
     if (krk_connection_ssl_init(conn, monitor->ssl) != KRK_OK ) {
@@ -811,6 +813,12 @@ static int http_process_node(struct krk_node *node, void *param)
     
     conn->wev->timeout = malloc(sizeof(struct timeval));
     if (!conn->wev->timeout) {
+        krk_connection_destroy(conn);
+        return KRK_ERROR;
+    }
+
+    conn->rev->timeout = malloc(sizeof(struct timeval));
+    if (!conn->rev->timeout) {
         krk_connection_destroy(conn);
         return KRK_ERROR;
     }
