@@ -50,6 +50,12 @@ struct krk_ssl* krk_ssl_new_ctx(void)
     return ssl;
 }
 
+static void
+krk_ssl_info_callback(const SSL *ssl, int where, int ret)
+{
+    return;
+}
+
 /**
  *
  * Follow Nginx's setup
@@ -73,6 +79,8 @@ int krk_ssl_init_ctx(struct krk_ssl *ssl)
     SSL_CTX_set_options(ssl->ctx, SSL_OP_SINGLE_DH_USE);
 
     SSL_CTX_set_read_ahead(ssl->ctx, 1);
+
+    SSL_CTX_set_info_callback(ssl->ctx, krk_ssl_info_callback);
 
     return KRK_OK;
 }
@@ -103,10 +111,21 @@ krk_ssl_create_connection(int sock, struct krk_ssl *ssl)
     return sc;
 }
 
+void krk_ssl_clear_error(void)
+{
+    while (ERR_peek_error()) {
+    }
+
+    ERR_clear_error();
+}
 
 int krk_ssl_handshake(struct krk_ssl_connection *sc)
 {
     int ret, sslerr;
+
+    krk_ssl_clear_error();
+
+    krk_log(KRK_LOG_DEBUG, "ssl handshake, connection: %p\n", sc->ssl_connection);
 
     ret = SSL_do_handshake(sc->ssl_connection);
 
