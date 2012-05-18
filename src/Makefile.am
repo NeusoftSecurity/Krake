@@ -1,1 +1,1 @@
-SUBDIRS=daemon ctrl
+SUBDIRS=daemon

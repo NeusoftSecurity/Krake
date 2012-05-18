@@ -10,6 +10,11 @@
  * (at your option) any later version.
  */
 
+#include <stdlib.h>
+#include <ctype.h>
+#include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
+
 #include <krk_core.h>
 #include <krk_socket.h>
 #include <krk_event.h>
@@ -20,93 +25,485 @@
 #include <krk_log.h>
 #include <checkers/krk_checker.h>
 
-void krk_config_read(int sock, short type, void *arg);
-void krk_config_write(int sock, short type, void *arg);
+struct krk_config_param {
+    xmlChar *key;
+    int cmd_label;
+};
 
-static inline void krk_config_show_content(struct krk_config *conf)
+struct krk_config_parser {
+    struct krk_config_param param;
+    int (*parser)(struct krk_config_param *param, void *arg,
+                xmlDocPtr doc, xmlNodePtr cur);
+};
+
+static int krk_config_parse_first(struct krk_config_param *param, 
+                    char *conf_value, int conf_string_len, 
+                    unsigned int *conf_cmd,
+                    xmlDocPtr doc, xmlNodePtr cur)
 {
-    krk_log(KRK_LOG_DEBUG, "config: \n");
-    krk_log(KRK_LOG_DEBUG, "\tmonitor: %s\n", conf->monitor);
-    krk_log(KRK_LOG_DEBUG, "\tchecker: %s\n", conf->checker);
-    krk_log(KRK_LOG_DEBUG, "\tchecker_param: %s\n", conf->checker_param);
-    krk_log(KRK_LOG_DEBUG, "\tchecker_param_len: %lu\n", conf->checker_param_len);
-    krk_log(KRK_LOG_DEBUG, "\tssl: %lu\n", conf->ssl);
-    krk_log(KRK_LOG_DEBUG, "\tinterval: %lu\n", conf->interval);
-    krk_log(KRK_LOG_DEBUG, "\ttimeout: %lu\n", conf->timeout);
-    krk_log(KRK_LOG_DEBUG, "\tthreshold: %lu\n", conf->threshold);
-    krk_log(KRK_LOG_DEBUG, "\tnode: %s\n", conf->node);
-    krk_log(KRK_LOG_DEBUG, "\tport: %u\n", conf->port);
-    krk_log(KRK_LOG_DEBUG, "\tscript: %s\n", conf->script);
+    xmlChar *key;
+    int key_len = 0;
+
+    key = xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
+//    printf("%s: %s\n",param->key, key);
+    key_len = xmlStrlen(key); 
+    if (key_len > conf_string_len) {
+        printf("the %s configuration length %d is bigger than %d\n",param->key,key_len,conf_string_len);
+        xmlFree(key);
+        return KRK_ERROR;
+    }
+
+    if (key_len == 0) {
+        printf("the length of the key is 0!\n");
+        xmlFree(key);
+        return KRK_OK;
+    }
+
+    if (param->cmd_label) {
+        if (*conf_cmd & param->cmd_label) {
+            printf("%s configuration repeated!\n", param->key);
+            xmlFree(key);
+            return KRK_ERROR;
+        }
+        *conf_cmd |= param->cmd_label;
+    }
+
+    strncpy(conf_value, key, conf_string_len);
+    xmlFree(key);
+
+    return KRK_OK;
 }
 
-/**
- * krk_config_check - check config
- * @conf: configuration to check
- *
- *
- * return: KRK_OK on success, KRK_ERROR on failed
- *
- * Finally I decide to do this check at the daemon
- * side instead of in krakectrl. This check could
- * make krake daemon more robust, although this could
- * impact the performance of configuration.
- */
-static int krk_config_check(struct krk_config *conf)
+static int krk_config_parse_xml_node(struct krk_config_parser *conf_parser, 
+                    int parser_num, void *arg, xmlDocPtr doc, xmlNodePtr cur) 
 {
-    int ret = KRK_OK;
-
-    switch (conf->command) {
-        case KRK_CONF_CMD_CREATE:
-            if (!conf->monitor[0]) {
-                ret = KRK_ERROR;
-                break;
+    struct krk_config_parser *c_parser = NULL;
+    int p = 0;
+    int ret = 0;
+    
+	cur = cur->xmlChildrenNode;
+	while (cur != NULL) {
+        c_parser = conf_parser;
+        for (p = 0; p < parser_num; p++) {
+		    if ((!xmlStrcmp(cur->name, c_parser->param.key))) {
+                ret = c_parser->parser(&c_parser->param, arg, doc, cur);
+                if (ret < 0) {
+                    return KRK_ERROR;
+                }
             }
+            c_parser++;
+        }
+        cur = cur->next;
+    }
 
-            if (!conf->checker[0]) {
-                ret = KRK_ERROR;
-                break;
-            }
 
-            if (conf->interval == 0) {
-                conf->interval = KRK_CONF_DEFAULT_INTERVAL;
-            }
+    return KRK_OK;
+}
 
-            if (conf->timeout == 0) {
-                conf->timeout = KRK_CONF_DEFAULT_TIMEOUT;
-            }
+static int krk_config_node_host(struct krk_config_param *param, void *arg,
+                    xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_node *node = arg; 
 
-            if (conf->threshold == 0) {
-                conf->threshold = KRK_CONF_DEFAULT_THRESHOLD;
-            }
+    return krk_config_parse_first(param, node->addr, 
+                        sizeof(node->addr),
+                        &node->config, doc, cur);
+}
 
-            /* not allow timeout >= interval */
-            if (conf->interval <= conf->timeout) {
-                ret = KRK_ERROR;
-            }
+static int krk_config_node_port(struct krk_config_param *param, void *arg,
+                    xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_node *node = arg; 
+    char config_value[5] = {};//5 is sizeof 65535
+    int i = 0;
+    int ret = 0;
 
-            break;
-        case KRK_CONF_CMD_DESTROY:
-            if (!conf->monitor[0]) {
-                ret = KRK_ERROR;
-            }
-            break;
-        case KRK_CONF_CMD_ADD:
-        case KRK_CONF_CMD_REMOVE:
-        case KRK_CONF_CMD_SHOW:
-        case KRK_CONF_CMD_ENABLE:
-        case KRK_CONF_CMD_DISABLE:
-            break;
-        case KRK_CONF_CMD_LOG:
-            if (!conf->log_type[0] && !conf->log_level[0]) {
-                ret = KRK_ERROR;
-            }
-            break;
-        default:
-            /* never should be here */
-            ret = KRK_ERROR;
-    };
+    ret = krk_config_parse_first(param, config_value, 
+                        sizeof(config_value),
+                        &node->config, doc, cur);
+    if (ret < 0) {
+        return KRK_ERROR;
+    }
 
-    return ret;
+    for (i = 0; i < strlen(config_value); i++) {
+        if (!isdigit(config_value[i])) {
+            printf("port configuration is not number!\n");
+            return KRK_ERROR;
+        }
+    }
+
+    node->port = atoi(config_value);
+    if ((short)node->port <= 0 ){
+        printf("port configuration error!\n");
+        return KRK_ERROR;
+    }
+
+    return KRK_OK;
+}
+
+static struct krk_config_parser krk_node_parser[] = {
+    {{"host", KRK_CONF_MONITOR_NODE_HOST}, krk_config_node_host},
+    {{"port", KRK_CONF_MONITOR_NODE_PORT}, krk_config_node_port},
+};
+
+#define krk_config_node_parser_num \
+    (sizeof(krk_node_parser)/sizeof(struct krk_config_parser))
+
+static int krk_config_node_parse(struct krk_config_param *param, void *arg,
+                    xmlDocPtr doc, xmlNodePtr cur) 
+{
+    struct krk_config_monitor *monitor = arg;
+    struct krk_config_node *node = NULL;
+
+    node = calloc(1, sizeof(*node));
+    if (node == NULL) {
+        return KRK_ERROR;
+    }
+
+    node->next = monitor->node;
+    monitor->node = node;
+
+    return krk_config_parse_xml_node(krk_node_parser, 
+                    krk_config_node_parser_num, node, doc, cur);
+}
+
+static int krk_config_log_type(struct krk_config_param *param, void *arg,
+                    xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_log *log = arg;
+
+    return krk_config_parse_first(param, log->log_type, 
+                        sizeof(log->log_type),
+                        &log->config, doc, cur);
+}
+
+static int krk_config_log_level(struct krk_config_param *param, void *arg,
+                    xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_log *log = arg;
+
+    return krk_config_parse_first(param, log->log_level, 
+                        sizeof(log->log_level),
+                        &log->config, doc, cur);
+}
+
+static struct krk_config_parser krk_log_parser[] = {
+    {{"logtype", KRK_CONF_MONITOR_LOGTYPE}, krk_config_log_type},
+    {{"loglevel", KRK_CONF_MONITOR_LOGLEVEL}, krk_config_log_level},
+};
+
+#define krk_config_log_parser_num \
+    (sizeof(krk_log_parser)/sizeof(struct krk_config_parser))
+
+static int krk_config_log_parse(struct krk_config_param *param, void *arg,
+                    xmlDocPtr doc, xmlNodePtr cur) 
+{
+    struct krk_config *conf = arg;
+
+    if (param->cmd_label) {
+        if (conf->config & param->cmd_label) {
+            printf("%s configuration repeated!\n", param->key);
+            return KRK_ERROR;
+        }
+        conf->config |= param->cmd_label;
+    }
+
+    return krk_config_parse_xml_node(krk_log_parser, 
+                    krk_config_log_parser_num, &conf->log, doc, cur);
+}
+
+static int krk_config_monitor_name(struct krk_config_param *param, void *arg,
+                    xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_monitor *monitor = arg;
+
+    return krk_config_parse_first(param, monitor->monitor, 
+                        sizeof(monitor->monitor), 
+                        &monitor->config, doc, cur);
+}
+
+static int krk_config_monitor_status(struct krk_config_param *param, void *arg,
+                    xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_monitor *monitor = arg;
+    char m_enable[] = {"enable"};
+    char m_disable[] = {"disable"};
+    char config_value[7] = {}; //7 is sizeof "disable"
+    int ret = 0;
+
+    ret = krk_config_parse_first(param, config_value, 
+                        sizeof(config_value), 
+                        &monitor->config, doc, cur);
+    if (ret < 0) {
+        return KRK_ERROR;
+    }
+
+    if (!strncmp(config_value, m_enable, strlen(m_enable))) {
+        monitor->enable = 1;
+        return KRK_OK;
+    }
+
+    if (!strncmp(config_value, m_disable, strlen(m_disable))) {
+        monitor->enable = 0;
+        return KRK_OK;
+    }
+
+    printf("Unable to parse status configuration!\n");
+    return KRK_ERROR;
+}
+
+static int krk_config_monitor_checker(struct krk_config_param *param, void *arg,
+                    xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_monitor *monitor = arg;
+
+    return krk_config_parse_first(param, monitor->checker, 
+                        sizeof(monitor->checker), 
+                        &monitor->config, doc, cur);
+}
+
+static int krk_config_monitor_checker_param(struct krk_config_param *param, void *arg,
+                    xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_monitor *monitor = arg;
+    char config_value[KRK_CONFIG_MAX_LEN] = {};
+    int param_len = 0;
+    int ret = 0;
+
+    ret = krk_config_parse_first(param, config_value, 
+                        sizeof(config_value),
+                        &monitor->config, doc, cur);
+    if (ret < 0) {
+        return KRK_ERROR;
+    }
+
+    param_len = strlen(config_value);
+    monitor->checker_param = calloc(1, param_len);
+    if (monitor->checker_param == NULL) {
+        return KRK_ERROR;
+    }
+    strncpy(monitor->checker_param, config_value, param_len);
+    monitor->checker_param_len = param_len;
+
+    return KRK_OK;
+}
+
+static int krk_config_monitor_interval(struct krk_config_param *param, void *arg,
+                xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_monitor *monitor = arg;
+    char config_value[KRK_CONFIG_MAX_LEN] = {};
+    int i = 0;
+    int ret = 0;
+
+    ret = krk_config_parse_first(param, config_value, 
+                        sizeof(config_value), 
+                        &monitor->config, doc, cur);
+    if (ret < 0) {
+        return KRK_ERROR;
+    }
+
+    for (i = 0; i < strlen(config_value); i++) {
+        if (!isdigit(config_value[i])) {
+            printf("interval configuration is not number!\n");
+            return KRK_ERROR;
+        }
+    }
+
+    monitor->interval = atol(config_value);
+    if ((long)monitor->interval < 0) {
+        return KRK_ERROR;
+    }
+
+    return KRK_OK;
+}
+
+static int krk_config_monitor_timeout(struct krk_config_param *param, void *arg,
+                xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_monitor *monitor = arg;
+    char config_value[KRK_CONFIG_MAX_LEN] = {};
+    int i = 0;
+    int ret = 0;
+
+    ret = krk_config_parse_first(param, config_value, 
+                        sizeof(config_value),  
+                        &monitor->config, doc, cur);
+    if (ret < 0) {
+        return KRK_ERROR;
+    }
+
+    for (i = 0; i < strlen(config_value); i++) {
+        if (!isdigit(config_value[i])) {
+            printf("timeout configuration is not number!\n");
+            return KRK_ERROR;
+        }
+    }
+
+    monitor->timeout = atol(config_value);
+    if ((long)monitor->timeout < 0) {
+        return KRK_ERROR;
+    }
+
+    return KRK_OK;
+}
+
+static int krk_config_monitor_threshold(struct krk_config_param *param, void *arg,
+                xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_monitor *monitor = arg;
+    char config_value[KRK_CONFIG_MAX_LEN] = {};
+    int i = 0;
+    int ret = 0;
+
+    ret = krk_config_parse_first(param, config_value, 
+                        sizeof(config_value),  
+                        &monitor->config, doc, cur);
+    if (ret < 0) {
+        return KRK_ERROR;
+    }
+
+    for (i = 0; i < strlen(config_value); i++) {
+        if (!isdigit(config_value[i])) {
+            printf("threshold configuration is not number!\n");
+            return KRK_ERROR;
+        }
+    }
+
+    monitor->threshold = atol(config_value);
+    if ((long)monitor->threshold < 0) {
+        return KRK_ERROR;
+    }
+
+    return KRK_OK;
+}
+
+static int krk_config_monitor_script(struct krk_config_param *param, void *arg,
+                xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_monitor *monitor = arg;
+
+    return krk_config_parse_first(param, monitor->script, 
+                        sizeof(monitor->script),
+                        &monitor->config, doc, cur);
+}
+
+static int krk_config_monitor_node(struct krk_config_param *param, void *arg,
+            xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_monitor *monitor = arg;
+
+    return krk_config_node_parse(param, monitor, doc, cur);
+}
+
+static struct krk_config_parser krk_monitor_parser[] = {
+    {{"name", KRK_CONF_MONITOR_NAME}, krk_config_monitor_name},
+    {{"status", KRK_CONF_MONITOR_STATUS}, krk_config_monitor_status},
+    {{"checker", KRK_CONF_MONITOR_CHECKER}, krk_config_monitor_checker},
+    {{"checker-param", KRK_CONF_MONITOR_CHECKER_PARAM}, krk_config_monitor_checker_param},
+    {{"interval", KRK_CONF_MONITOR_INTERVAL}, krk_config_monitor_interval},
+    {{"timeout", KRK_CONF_MONITOR_TIMEOUT}, krk_config_monitor_timeout},
+    {{"threshold", KRK_CONF_MONITOR_THRESHOLD}, krk_config_monitor_threshold},
+    {{"script", KRK_CONF_MONITOR_SCRIPT}, krk_config_monitor_script},
+    {{"node", 0}, krk_config_monitor_node},
+};
+
+#define krk_config_monitor_parser_num \
+    (sizeof(krk_monitor_parser)/sizeof(struct krk_config_parser))
+
+static int krk_config_monitor_parse(struct krk_config_param *param, void *arg,
+                xmlDocPtr doc, xmlNodePtr cur) 
+{
+    struct krk_config *conf = arg;
+    struct krk_config_monitor *monitor = NULL; 
+    int p = 0;
+    int ret = 0;
+
+    monitor = calloc(1, sizeof(*monitor));
+    if (monitor == NULL) {
+        return KRK_ERROR;
+    }
+
+    monitor->next = conf->monitor;
+    conf->monitor = monitor;
+
+    return krk_config_parse_xml_node(krk_monitor_parser, 
+                    krk_config_monitor_parser_num, monitor, doc, cur);
+}
+
+static void krk_config_monitor_free(struct krk_config_monitor *monitor)
+{
+    struct krk_config_node *node = NULL;
+    struct krk_config_node *tmp = NULL;
+
+    if (monitor->checker_param) {
+        free(monitor->checker_param);
+    }
+
+    node = monitor->node; 
+    while (node != NULL) {
+        tmp = node;
+        node = node->next;
+        free(tmp);
+    }
+
+    free(monitor);
+}
+
+static void krk_config_free(struct krk_config *conf)
+{    
+    struct krk_config_monitor *monitor = NULL;
+    struct krk_config_monitor *tmp = NULL;
+
+    monitor = conf->monitor; 
+    while (monitor != NULL) {
+        tmp = monitor;
+        monitor = monitor->next;
+        krk_config_monitor_free(tmp);
+    }
+}
+
+static struct krk_config_parser krk_parser[] = {
+    {{"monitor", 0}, krk_config_monitor_parse},
+    {{"log", KRK_CONF_MONITOR_SCRIPT}, krk_config_log_parse},
+};
+
+#define krk_config_parser_num \
+    (sizeof(krk_parser)/sizeof(struct krk_config_parser))
+
+
+static int krk_config_parse(char *config_file, struct krk_config *conf)
+{
+	xmlDocPtr xml_file;
+	xmlNodePtr cur;
+    int ret = 0;
+
+    memset(conf, 0, sizeof(*conf));
+
+	xml_file = xmlReadFile(config_file, NULL, 0);
+	if (xml_file == NULL ) {
+		fprintf(stderr,"%s not parsed successfully. \n",config_file);
+		return KRK_ERROR;
+	}
+
+	cur = xmlDocGetRootElement(xml_file);
+	if (cur == NULL) {
+		fprintf(stderr,"empty document\n");
+		xmlFreeDoc(xml_file);
+		return KRK_ERROR;
+	}
+
+    if (xmlStrcmp(cur->name, (const xmlChar *) "krk_config")) {
+        fprintf(stderr,"document of the wrong type, root node != krk_config");
+        xmlFreeDoc(xml_file);
+		return KRK_ERROR;
+    }
+
+    ret = krk_config_parse_xml_node(krk_parser, krk_config_parser_num, 
+                        conf, xml_file, cur);
+
+	xmlFreeDoc(xml_file);
+	return ret;
 }
 
 static int krk_config_parse_pathname(struct krk_monitor *monitor)
@@ -129,354 +526,246 @@ static int krk_config_parse_pathname(struct krk_monitor *monitor)
     return KRK_OK;
 }
 
-static int krk_config_parse(struct krk_config *conf)
+static int krk_config_process_log(struct krk_config_log *log) 
 {
-    int ret = KRK_OK;
-    struct krk_monitor *monitor = NULL;
-    struct krk_node *node = NULL;
-    struct krk_checker *checker = NULL;
+    return krk_log_set_type(log->log_type, log->log_level);
+}
 
-    if (conf->command != KRK_CONF_CMD_CREATE
-            && conf->command != KRK_CONF_CMD_LOG) {
-        monitor = krk_monitor_find(conf->monitor);
-        if (monitor == NULL) {
+static int krk_config_new_monitor(struct krk_config_monitor *conf_monitor) 
+{
+    struct krk_monitor *monitor = NULL;
+    struct krk_checker *checker = NULL;
+    struct krk_config_node *c_node = NULL;
+    struct krk_node *node = NULL;
+    int ret = KRK_OK;
+
+    monitor = krk_monitor_create(conf_monitor->monitor);
+    if (monitor == NULL) {
+        printf("create monitor failed!\n");
+        ret = KRK_ERROR;
+        goto out;
+    }
+
+    monitor->interval = conf_monitor->interval;
+    monitor->timeout = conf_monitor->timeout;
+    monitor->threshold = conf_monitor->threshold;
+
+    if (!strcmp(conf_monitor->checker, "https")) {
+        monitor->ssl_flag = 1;
+        if (krk_monitor_init_ssl(monitor) != KRK_OK) {
             ret = KRK_ERROR;
+            goto out;
+        }
+        strncpy(conf_monitor->checker, "http",KRK_NAME_LEN);
+    }
+
+    if (conf_monitor->script[0]) {
+        strncpy(monitor->notify_script, conf_monitor->script, KRK_NAME_LEN);
+        monitor->notify_script[KRK_NAME_LEN - 1] = 0;
+        ret = krk_config_parse_pathname(monitor);
+        if (ret != KRK_OK) {
+            printf("parse pathname failed!\n");
             goto out;
         }
     }
 
-    switch (conf->command) {
-        case KRK_CONF_CMD_CREATE:
-            monitor = krk_monitor_create(conf->monitor);
-            if (monitor == NULL) {
-                ret = KRK_ERROR;
-                goto out;
-            }
+    checker = krk_checker_find(conf_monitor->checker);
+    if (checker == NULL) {
+        printf("find checker failed!\n");
+        ret = KRK_ERROR;
+        goto out;
+    }
 
-            monitor->interval = conf->interval;
-            monitor->timeout = conf->timeout;
-            monitor->threshold = conf->threshold;
+    monitor->checker = checker;
 
-            monitor->ssl_flag = conf->ssl;
-            if (krk_monitor_init_ssl(monitor) != KRK_OK) {
-                ret = KRK_ERROR;
-                goto out;
-            }
+    if (checker->parse_param) {
+        ret = checker->parse_param(monitor, conf_monitor->checker_param, 
+                conf_monitor->checker_param_len);
+        if (ret != KRK_OK) {
+            printf("parse param failed!\n");
+            goto out;
+        }
+    }
 
-            if (conf->script[0]) {
-                strncpy(monitor->notify_script, conf->script, KRK_NAME_LEN);
-                monitor->notify_script[KRK_NAME_LEN - 1] = 0;
-                ret = krk_config_parse_pathname(monitor);
-                if (ret != KRK_OK) {
-                    goto out;
-                }
-            }
+    c_node = conf_monitor->node;
+    while (c_node != NULL) {
+        node = krk_monitor_create_node(c_node->addr, c_node->port);
+        if (node == NULL) {
+            printf("create node failed!\n");
+            ret = KRK_ERROR;
+            goto out;
+        }
 
-            checker = krk_checker_find(conf->checker);
-            if (checker == NULL) {
-                ret = KRK_ERROR;
-                goto out;
-            }
+        ret = krk_monitor_add_node(monitor, node);
+        if (ret == KRK_ERROR) {
+            printf("add node failed!\n");
+            goto out;
+        }
 
-            monitor->checker = checker;
+        c_node = c_node->next;
+    }
+    
+    if (conf_monitor->enable) {
+        krk_monitor_enable(monitor);
+    } else {
+        krk_monitor_disable(monitor);
+    }
 
-            if (checker->parse_param) {
-                ret = checker->parse_param(monitor, conf->checker_param, 
-                        conf->checker_param_len);
-            }
+out:
+    return ret;
+}
 
-            break;
-        case KRK_CONF_CMD_DESTROY:
-            ret = krk_monitor_destroy(monitor);
-            break;
-        case KRK_CONF_CMD_ADD:
-            node = krk_monitor_create_node(conf->node, conf->port);
+static int krk_config_update_node(struct krk_config_node *conf_node, 
+                    struct krk_node *node) 
+{
+    return KRK_OK;
+}
+
+static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor, 
+                    struct krk_monitor *monitor) 
+{
+    struct krk_checker *checker = NULL;
+    struct krk_config_node *conf_node = NULL;
+    struct krk_node *node = NULL;
+    int ret = KRK_OK;
+
+    pthread_mutex_lock(&monitor->mutex);
+
+    monitor->interval = conf_monitor->interval;
+    monitor->timeout = conf_monitor->timeout;
+    monitor->threshold = conf_monitor->threshold;
+
+    if (!strcmp(conf_monitor->checker, "https")) {
+        monitor->ssl_flag = 1;
+        if (krk_monitor_init_ssl(monitor) != KRK_OK) {
+            ret = KRK_ERROR;
+            goto out;
+        }
+        strncpy(conf_monitor->checker, "http",KRK_NAME_LEN);
+    }
+
+    if (conf_monitor->script[0]) {
+        strncpy(monitor->notify_script, conf_monitor->script, KRK_NAME_LEN);
+        monitor->notify_script[KRK_NAME_LEN - 1] = 0;
+        ret = krk_config_parse_pathname(monitor);
+        if (ret != KRK_OK) {
+            goto out;
+        }
+    }
+
+    checker = krk_checker_find(conf_monitor->checker);
+    if (checker == NULL) {
+        ret = KRK_ERROR;
+        goto out;
+    }
+
+    monitor->checker = checker;
+
+    if (checker->parse_param) {
+        if (monitor->parsed_checker_param) {
+            free(monitor->parsed_checker_param);
+        }
+
+        ret = checker->parse_param(monitor, conf_monitor->checker_param, 
+                conf_monitor->checker_param_len);
+        if (ret != KRK_OK) {
+            goto out;
+        }
+    }
+
+    ret = krk_remove_unused_node(conf_monitor, monitor);
+    if (ret == KRK_ERROR) {
+        return ret;
+    }
+
+    conf_node = conf_monitor->node;
+    while (conf_node != NULL) {
+        node = krk_monitor_find_node(conf_node->addr, conf_node->port, monitor);
+        if (node == NULL) {
+            node = krk_monitor_create_node(conf_node->addr, conf_node->port);
             if (node == NULL) {
                 ret = KRK_ERROR;
                 goto out;
             }
 
             ret = krk_monitor_add_node(monitor, node);
-            break;
-        case KRK_CONF_CMD_REMOVE:
-            node = krk_monitor_find_node(conf->node, conf->port, monitor);
-            if (node == NULL) {
-                ret = KRK_ERROR;
+            if (ret == KRK_ERROR) {
                 goto out;
             }
+        } else {
+            ret = krk_config_update_node(conf_node, node);
+            if (ret == KRK_ERROR) {
+                goto out;
+            }
+        }
 
-            ret = krk_monitor_remove_node(monitor, node);
-            break;
-        case KRK_CONF_CMD_ENABLE:
-            krk_monitor_enable(monitor);
-            break;
-        case KRK_CONF_CMD_DISABLE:
-            krk_monitor_disable(monitor);
-            break;
-        case KRK_CONF_CMD_LOG:
-            krk_log_set_type(conf->log_type, conf->log_level);
-            break;
-        default:
-            ret = KRK_ERROR;
+        conf_node = conf_node->next;
     }
 
 out:
-    if (monitor && !node && ret != KRK_OK) {
-        krk_monitor_destroy(monitor);
-    }
-
-    if (node && ret != KRK_OK) {
-        krk_monitor_destroy_node(node);
-    }
+    pthread_mutex_unlock(&monitor->mutex);
 
     return ret;
 }
 
-static int krk_config_process(struct krk_connection *conn)
+static int krk_config_process(struct krk_config *conf) 
 {
-    struct krk_config *conf = NULL;
-    struct krk_event *rev = conn->rev;
-    struct krk_event *wev = conn->wev;
-    int buf_len, ret, i, n;
-    struct krk_config_ret *retbuf;
-    char *buf;
-    struct krk_monitor* monitor = NULL;
-    struct krk_monitor* monitors = NULL;
-    struct krk_config_monitor *conf_monitor = NULL;
-    struct krk_config_node *conf_node = NULL;
-    struct krk_node *nodes = NULL;
+    struct krk_config_monitor *conf_monitor = NULL; 
+    struct krk_monitor *monitor = NULL; 
+    int ret = KRK_OK;
 
-    retbuf = malloc(sizeof(struct krk_config_ret));
-    memset(retbuf, 0, sizeof(struct krk_config_ret));
-
-    retbuf->retval = KRK_OK;
-
-    buf_len = rev->buf->last - rev->buf->pos;
-    if (buf_len < sizeof(struct krk_config)) {
-        return KRK_AGAIN;
+    ret = krk_config_process_log(&conf->log);
+    if (ret == KRK_ERROR) {
+        printf("process log failed!\n");
+        return ret;
     }
 
-    conf = (struct krk_config*)(rev->buf->pos);
-    conf->checker_param = conf->data;
-
-    if (buf_len < 
-            (sizeof(struct krk_config) + conf->checker_param_len)) {
-        return KRK_AGAIN;
+    ret = krk_remove_unused_monitor(conf);
+    if (ret == KRK_ERROR) {
+        printf("remove unused monitor failed!\n");
+        return ret;
     }
 
-    if (buf_len >
-            (sizeof(struct krk_config) + conf->checker_param_len)) {
-        return KRK_ERROR;
-    }
-
-    krk_config_show_content(conf);
-
-    ret = krk_config_check(conf);
-    if (ret != KRK_OK) {
-        retbuf->retval = KRK_ERROR;
-    } else {
-        if (conf->command == KRK_CONF_CMD_SHOW) {
-            if (conf->monitor[0]) {
-                /* buf = monitor + checker_conf + nodes */
-                monitor = krk_monitor_find(conf->monitor);
-                if (monitor == NULL) {
-                    retbuf->retval = KRK_ERROR;
-                    goto out;
-                }
-
-                retbuf->data_len = sizeof(struct krk_config_monitor)
-                    + monitor->nr_nodes * sizeof(struct krk_config_node)
-                    + monitor->checker_param_len;
-
-                buf = malloc(retbuf->data_len);
-                memset(buf, 0, retbuf->data_len);
-
-                conf_monitor = (struct krk_config_monitor *)buf;
-
-                strcpy(conf_monitor->monitor, monitor->name);
-                conf_monitor->threshold = monitor->threshold;
-                conf_monitor->interval = monitor->interval;
-                conf_monitor->timeout = monitor->timeout;
-
-                if (monitor->checker) {
-                    strncpy(conf_monitor->checker, monitor->checker->name, KRK_NAME_LEN);
-                    conf_monitor->checker[KRK_NAME_LEN - 1] = 0;
-                }
-
-                conf_monitor->checker_param_len = monitor->checker_param_len;
-                if (monitor->checker_param_len) {
-                    memcpy(buf + sizeof(struct krk_config_monitor),
-                            monitor->checker_param, monitor->checker_param_len);
-                }
-
-                conf_node = malloc(monitor->nr_nodes * 
-                        sizeof(struct krk_config_node));
-                if (conf_node == NULL) {
-                    retbuf->retval = KRK_ERROR;
-                    goto out;
-                }
-
-                nodes = malloc(monitor->nr_nodes * 
-                        sizeof(struct krk_node));
-                if (nodes == NULL) {
-                    retbuf->retval = KRK_ERROR;
-                    goto out;
-                }
-
-                memset(conf_node, 0, monitor->nr_nodes * sizeof(struct krk_config_node));
-                memset(nodes, 0, monitor->nr_nodes * sizeof(struct krk_node));
-
-                if (monitor->nr_nodes) {
-                    ret = krk_monitor_get_all_nodes(monitor, nodes);
-                    if (ret < 0) {
-                        retbuf->retval = KRK_ERROR;
-                        goto out;
-                    }
-
-                    n = (ret > monitor->nr_nodes) ? monitor->nr_nodes : ret;
-
-                    for (i = 0; i < n; i++) {
-                        strncpy(conf_node[i].addr, nodes[i].addr, KRK_NAME_LEN);
-                        conf_node[i].addr[KRK_NAME_LEN - 1] = 0;
-                        conf_node[i].port = nodes[i].port;
-                        conf_node[i].down = nodes[i].down;
-                    }
-
-                    free(nodes);
-
-                    memcpy(buf + sizeof(struct krk_config_monitor) + 
-                            conf_monitor->checker_param_len, 
-                            conf_node, 
-                            monitor->nr_nodes * sizeof(struct krk_config_node));
-
-                    conf_monitor->nr_nodes = n;
-
-                    krk_log(KRK_LOG_DEBUG, "conf_node[0].addr: %s, port: %u\n",
-                            conf_node[0].addr, conf_node[0].port);
-
-                    free(conf_node);
-                }
-            } else {
-                monitors = malloc(sizeof(struct krk_monitor) * KRK_MONITOR_MAX_NR);
-                if (monitors == NULL) {
-                    retbuf->retval = KRK_ERROR;
-                    goto out;
-                }
-
-                ret = krk_monitor_get_all_monitors(monitors);
-                if (ret < 0) {
-                    retbuf->retval = KRK_ERROR;
-                    goto out;
-                }
-
-                if (ret > 0) {
-                    retbuf->data_len = ret * KRK_NAME_LEN;
-                    buf = malloc(retbuf->data_len);
-
-                    for (i = 0; i < ret; i++) {
-                        strcpy(buf + i * KRK_NAME_LEN, monitors[i].name);
-                    }
-                }
-
-                free(monitors);
-            }
-
-            if ((retbuf->data_len + sizeof(struct krk_config_ret))
-                    > (wev->buf->end - wev->buf->last)) {
-                return KRK_ERROR;
+    conf_monitor = conf->monitor;
+    while (conf_monitor != NULL) {
+        monitor = krk_monitor_find(conf_monitor->monitor);
+        if (monitor == NULL) {
+            ret = krk_config_new_monitor(conf_monitor);
+            if (ret == KRK_ERROR) {
+                printf("config new monitor failed!\n");
+                goto out;
             }
         } else {
-            ret = krk_config_parse(conf);
-            if (ret != KRK_OK) {
-                retbuf->retval = KRK_ERROR;
+            ret = krk_config_update_monitor(conf_monitor, monitor);
+            if (ret == KRK_ERROR) {
+                printf("update monitor failed!\n");
+                goto out;
             }
         }
+        conf_monitor = conf_monitor->next;
     }
-
 out:
-    /* add return value */
-    memcpy(wev->buf->pos, retbuf, sizeof(struct krk_config_ret));
-    wev->buf->last += sizeof(struct krk_config_ret);
-
-    /* append additional data */
-    if (retbuf->data_len) {
-        memcpy(wev->buf->last, buf, retbuf->data_len);
-        wev->buf->last += retbuf->data_len;
-        free(buf);
-    }
-
-    free(retbuf);
-
-    krk_event_set_write(conn->sock, wev);
-    krk_event_add(wev);
-
-    return KRK_DONE;
+    return ret;
 }
 
-void krk_config_read(int sock, short type, void *arg)
+int krk_config_load(char *config_file)
 {
-    int n, ret;
-    struct krk_event *rev;
-    struct krk_connection *conn;
+    struct krk_config conf;
+    int ret = KRK_OK;
 
-    rev = arg;
-    conn = rev->conn;
-
-    n = recv(sock, rev->buf->last, rev->buf->end - rev->buf->last, 0);
-    if (n == 0) {
-        krk_log(KRK_LOG_DEBUG, "read config finished\n"); 
-        krk_connection_destroy(conn);
-        return;
+    ret = krk_config_parse(config_file, &conf);
+    if (ret == KRK_ERROR) {
+        printf("config pase failed!\n");
+        goto out;
     }
 
-    if (n < 0) {
-        krk_log(KRK_LOG_ALERT, "read config error\n");
-        krk_connection_destroy(conn);
-        return;
+    ret = krk_config_process(&conf);
+    if (ret == KRK_ERROR) {
+        printf("process config failed!\n");
+        krk_all_monitors_destroy();
     }
+out:
+    krk_config_free(&conf);
 
-    rev->buf->last += n;
-    ret = krk_config_process(conn);
-
-    if (ret == KRK_AGAIN) {
-        /* KRK_AGAIN means command not completed */
-    }
-
-    if (ret == KRK_DONE 
-            || ret == KRK_ERROR) {
-        rev->buf->last = rev->buf->head;
-    }
-
-    krk_event_set_read(sock, rev);
-    krk_event_add(rev);
-}
-
-void krk_config_write(int sock, short type, void *arg)
-{
-    int n;
-    struct krk_event *wev;
-    struct krk_connection *conn;
-
-    wev = arg;
-    conn = wev->conn;
-
-    n = send(sock, wev->buf->pos, wev->buf->last - wev->buf->pos, 0);
-    if (n < 0) {
-        krk_log(KRK_LOG_ALERT, "write config retval error\n");
-        krk_connection_destroy(conn);
-        return;
-    }
-
-    if (n == (wev->buf->last - wev->buf->pos)) {
-        wev->buf->pos = wev->buf->last = wev->buf->head;
-        return;
-    }
-
-    /* write busy, rearm */
-    if (n < (wev->buf->last - wev->buf->pos)) {
-        wev->buf->pos += n;
-    }
-
-    krk_event_set_write(sock, wev);
-    krk_event_add(wev);
+    return ret;
 }

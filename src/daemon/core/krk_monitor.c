@@ -126,6 +126,7 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
     ev = arg;
     monitor = ev->data;
 
+    pthread_mutex_lock(&monitor->mutex);
     list_for_each_safe(p, n, &monitor->node_list) {
         tmp = list_entry(p, struct krk_node, list);
 
@@ -145,6 +146,7 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
     }
 
     krk_event_add(monitor->tmout_ev);
+    pthread_mutex_unlock(&monitor->mutex);
 }
 
 /**
@@ -158,31 +160,44 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
 struct krk_monitor* krk_monitor_create(const char *name)
 {	
     struct krk_monitor *monitor = NULL;
+    int ret = 0;
 
     if (!name) {
+        printf("name = NULL!\n");
         return NULL;
     }
 
     monitor = krk_monitor_find(name);
     if (monitor != NULL) {
+        printf("%s is existing!\n",name);
         return NULL;
     }
 
     if (krk_nr_monitors == krk_max_monitors) {
+        printf("monitor number (%d) is full(%d)!\n",krk_nr_monitors, krk_max_monitors);
         return NULL;
     }
 
     monitor = malloc(sizeof(struct krk_monitor));
     if (!monitor) {
+        printf("alloc monitor failed!\n");
         return NULL;
     }
 
     memset(monitor, 0, sizeof(struct krk_monitor));
     INIT_LIST_HEAD(&monitor->node_list);
 
+    ret = pthread_mutex_init(&monitor->mutex, NULL);
+    if (ret != 0) {
+        free(monitor);
+        printf("init mutex failed!\n");
+        return NULL;
+    }
+
     monitor->tmout_ev = krk_event_create(0);
     if (monitor->tmout_ev == NULL) {
         free(monitor);
+        printf("create event failed!\n");
         return NULL;
     }
 
@@ -221,9 +236,41 @@ int krk_monitor_destroy(struct krk_monitor *monitor)
         free(monitor->parsed_checker_param);
     }
 
+    pthread_mutex_destroy(&monitor->mutex);
+
     free(monitor);
 
     krk_nr_monitors--;
+
+    return KRK_OK;
+}
+
+int krk_remove_unused_monitor(struct krk_config *conf)
+{
+    struct krk_config_monitor *conf_monitor = NULL;
+    struct krk_monitor *monitor = NULL;
+    struct list_head *p, *n;
+    int found = 0;
+    int ret = 0;
+
+    list_for_each_safe(p, n, &krk_all_monitors) {
+        found = 0;
+        monitor = list_entry(p, struct krk_monitor, list);
+        conf_monitor = conf->monitor;
+        while (conf_monitor != NULL) {
+            if (!strcmp(monitor->name, conf_monitor->monitor)) {
+                found = 1;
+                break;
+            }
+            conf_monitor = conf_monitor->next;
+        }
+        if (!found) {
+            ret = krk_monitor_destroy(monitor);
+            if (ret == KRK_ERROR) {
+                return ret;
+            }
+        }
+    }
 
     return KRK_OK;
 }
@@ -473,7 +520,43 @@ int krk_monitor_remove_node(struct krk_monitor *monitor,
     return KRK_OK;
 }
 
-int krk_monitor_set_node_status(struct krk_monitor *monitor, 
+int krk_remove_unused_node(struct krk_config_monitor *conf_monitor, struct krk_monitor *monitor)
+{
+    struct list_head *p, *n;
+    struct krk_node *tmp;
+    struct krk_config_node *node;
+    int found = 0;
+    int ret = KRK_OK;
+
+    list_for_each_safe(p, n, &monitor->node_list) {
+        tmp = list_entry(p, struct krk_node, list);
+        node = conf_monitor->node;
+        found = 0;
+        while (node != NULL) {
+            if (!strcmp(node->addr, tmp->addr) && 
+                        node->port == tmp->port) {
+                found = 1;
+                break;
+            }
+            node = node->next;
+        }
+        if (!found) {
+            ret = krk_monitor_remove_node(monitor, tmp);
+            if (ret == KRK_ERROR) {
+                krk_monitor_destroy_node(tmp);
+                return ret;
+            }
+            ret = krk_monitor_destroy_node(tmp);
+            if (ret == KRK_ERROR) {
+                return ret;
+            }
+        }
+    }
+
+    return KRK_OK;
+}
+
+int krk_mointor_set_node_status(struct krk_monitor *monitor, 
         unsigned char id, int status)
 {
     struct krk_node *node;
@@ -542,6 +625,63 @@ int krk_monitor_get_nodes_by_addr(const char *addr,
     }
 
     return i;
+}
+
+static void krk_monitor_show_checker(struct krk_checker *checker)
+{
+    printf("checker name = %s\n",checker->name);
+}
+
+static void krk_monitor_show_node(struct krk_node *node)
+{
+    printf("------------node------------\n");
+    printf("node addr = %s\n", node->addr);
+    printf("node port = %u\n", node->port);
+    printf("node nr_fails = %u\n", node->nr_fails);
+    printf("node id = %d\n", node->id);
+    printf("node ipv6 = %d\n", node->ipv6);
+    printf("node down = %d\n", node->down);
+    printf("node ready = %d\n", node->ready);
+    printf("------------node end------------\n");
+}
+
+static void krk_monitor_show_one(struct krk_monitor *monitor)
+{
+    struct list_head *k, *m;
+    struct krk_node *node;
+
+    pthread_mutex_lock(&monitor->mutex);
+    printf("============monitor============\n");
+    printf("monitor name = %s\n",monitor->name);
+    printf("id = %d\n",monitor->id);
+    printf("interval = %lu\n",monitor->interval);
+    printf("timeout = %lu\n",monitor->timeout);
+    printf("threshold = %lu\n",monitor->threshold);
+
+    krk_monitor_show_checker(monitor->checker);
+
+    printf("notify_script= %s\n",monitor->notify_script);
+    printf("notify_script_name= %s\n",monitor->notify_script_name);
+
+    printf("eanble= %d\n",monitor->enabled);
+
+    list_for_each_safe(k, m, &monitor->node_list) {
+        node = list_entry(k, struct krk_node, list);
+        krk_monitor_show_node(node);
+    }
+    printf("============monitor end============\n");
+    pthread_mutex_unlock(&monitor->mutex);
+}
+
+void krk_monitor_show(void)
+{
+    struct list_head *p, *n;
+    struct krk_monitor *monitor;
+
+    list_for_each_safe(p, n, &krk_all_monitors) {
+        monitor = list_entry(p, struct krk_monitor, list);
+        krk_monitor_show_one(monitor);
+    }
 }
 
 void krk_monitor_enable(struct krk_monitor *monitor)

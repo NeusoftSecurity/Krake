@@ -37,7 +37,7 @@ AC_ARG_WITH(libssl_libraries,
 			[with_libssl_libraries=no])
 
 
-CPPFLAGS="${CPPFLAGS} -I/usr/local/include"
+CPPFLAGS="${CPPFLAGS} -I/usr/local/include -I/usr/local/include/libxml2  -I/usr/include/libxml2"
 
 if test "$with_libevent_includes" != "no"; then
 	CPPFLAGS="${CPPFLAGS} -I${with_libevent_includes}"
@@ -85,6 +85,13 @@ if test "$LSSL" = "no"; then
     exit
 fi
 
+LXML2=""
+AC_CHECK_LIB([xml2], [xmlDocGetRootElement], , LXML2="no")
+
+PTHREAD=""
+AC_CHECK_LIB([pthread], [pthread_create], , PTHREAD="no")
+
+
 # Checks for header files.
 LEVENT=""
 AC_CHECK_HEADERS([event.h], , LEVENT="no")
@@ -120,7 +127,7 @@ fi
 # Checks for library functions.
 
 AC_CONFIG_FILES([Makefile
+                 config/Makefile
                  src/Makefile
-                 src/ctrl/Makefile
                  src/daemon/Makefile])
-AC_OUTPUT
+AC_OUTPUT(config_layout.h)
