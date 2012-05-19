@@ -336,7 +336,6 @@ int main(int argc, char* argv[])
     krk_log(KRK_LOG_NOTICE, "krake started\n");
     krk_event_loop();
 
-    krk_monitor_show();
     /* quit */
     if (__krk_smooth_quit()) {
         krk_log(KRK_LOG_ALERT, "Fatal: smooth quit failed\n");
