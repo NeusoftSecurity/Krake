@@ -573,6 +573,8 @@ int krk_mointor_set_node_status(struct krk_monitor *monitor,
 
 int krk_monitor_init_ssl(struct krk_monitor *monitor)
 {
+    krk_log(KRK_LOG_DEBUG, "monitor(%p) has ssl, init\n", monitor);
+    
     monitor->ssl = krk_ssl_new_ctx();
     if (!monitor->ssl) {
         return KRK_ERROR;

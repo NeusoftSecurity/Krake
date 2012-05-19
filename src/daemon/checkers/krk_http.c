@@ -657,6 +657,11 @@ static int http_init_ssl(struct krk_node *node, struct krk_connection *conn)
         return KRK_ERROR;
     }
 
+    /* ret == KRK_OK */
+
+    conn->recv = krk_connection_ssl_recv;
+    conn->send = krk_connection_ssl_send;
+    
     return KRK_OK;
 }
 
@@ -703,6 +708,22 @@ static void http_check_ssl_handler(int sock, short type, void *arg)
         conn->rev->timeout->tv_usec = 0;
         krk_event_set_read(conn->sock, conn->rev);
         krk_event_add(conn->rev);
+    } else if (ret == KRK_OK) {
+        conn->recv = krk_connection_ssl_recv;
+        conn->send = krk_connection_ssl_send;
+
+        krk_monitor_add_node_connection(node, conn);
+
+        conn->rev->handler = http_read_handler;
+        conn->wev->handler = http_write_handler;
+
+        conn->rev->data = node;
+        conn->wev->data = node;
+
+        conn->wev->timeout->tv_sec = monitor->timeout;
+        conn->wev->timeout->tv_usec = 0;
+        krk_event_set_write(conn->sock, conn->wev);
+        krk_event_add(conn->wev);
     }
 
     return;
@@ -755,14 +776,6 @@ static void http_check_tcp_handler(int sock, short type, void *arg)
         if (ret == KRK_AGAIN) {
             return;
         }
-
-        /* ret == KRK_OK */
-
-        conn->recv = krk_connection_ssl_recv;
-        conn->send = krk_connection_ssl_send;
-    } else {
-        conn->recv = krk_connection_recv;
-        conn->send = krk_connection_send;
     }
 
     krk_monitor_add_node_connection(node, conn);
@@ -852,14 +865,6 @@ static int http_process_node(struct krk_node *node, void *param)
         if (ret == KRK_AGAIN) {
             return ret;
         }
-
-        /* ret == KRK_OK */
-
-        conn->recv = krk_connection_ssl_recv;
-        conn->send = krk_connection_ssl_send;
-    } else {
-        conn->recv = krk_connection_recv;
-        conn->send = krk_connection_send;
     }
 
     krk_monitor_add_node_connection(node, conn);
