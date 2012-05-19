@@ -6,6 +6,6 @@
 #ifndef __KRK_CONFIG_LAYOUT_H__
 #define __KRK_CONFIG_LAYOUT_H__
 
-#define KRK_DEFAULT_CONF  "@prefix@/krake/conf/krake-config.xml"
+#define KRK_DEFAULT_CONF  "@prefix@/etc/krake/conf/krake-config.xml"
 
 #endif /* __FP_CONFIG_LAYOUT_H__ */

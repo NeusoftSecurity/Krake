@@ -88,6 +88,7 @@ static int krk_config_parse_xml_node(struct krk_config_parser *conf_parser,
 		    if ((!xmlStrcmp(cur->name, c_parser->param.key))) {
                 ret = c_parser->parser(&c_parser->param, arg, doc, cur);
                 if (ret < 0) {
+                    printf("paese %s failed!\n",c_parser->param.key);
                     return KRK_ERROR;
                 }
             }
@@ -330,6 +331,7 @@ static int krk_config_monitor_timeout(struct krk_config_param *param, void *arg,
                         sizeof(config_value),  
                         &monitor->config, doc, cur);
     if (ret < 0) {
+        printf("parse configuration first failed!\n");
         return KRK_ERROR;
     }
 

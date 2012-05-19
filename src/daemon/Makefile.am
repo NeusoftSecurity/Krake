@@ -4,5 +4,4 @@ krake_SOURCES=core/krk_core.c core/krk_socket.c core/krk_event.c core/krk_connec
 			  core/krk_ssl.c \
 			  checkers/krk_checker.c checkers/krk_tcp.c checkers/krk_icmp.c checkers/krk_http.c
 
-prefix = @prefix@/krake
 AM_CPPFLAGS = -I$(srcdir)/../include
