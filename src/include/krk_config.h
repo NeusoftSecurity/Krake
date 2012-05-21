@@ -24,11 +24,12 @@
 #define KRK_CONF_MONITOR_CHECKER_PARAM  0x008
 #define KRK_CONF_MONITOR_INTERVAL       0x010
 #define KRK_CONF_MONITOR_TIMEOUT        0x020
-#define KRK_CONF_MONITOR_THRESHOLD      0x040
-#define KRK_CONF_MONITOR_SCRIPT         0x080
-#define KRK_CONF_MONITOR_LOG            0x100
-#define KRK_CONF_MONITOR_LOGTYPE        0x200
-#define KRK_CONF_MONITOR_LOGLEVEL       0x400
+#define KRK_CONF_MONITOR_F_THRESHOLD      0x040
+#define KRK_CONF_MONITOR_S_THRESHOLD      0x080
+#define KRK_CONF_MONITOR_SCRIPT         0x100
+#define KRK_CONF_MONITOR_LOG            0x200
+#define KRK_CONF_MONITOR_LOGTYPE        0x400
+#define KRK_CONF_MONITOR_LOGLEVEL       0x800
 
 #define KRK_CONF_MONITOR_NODE_HOST      0x01
 #define KRK_CONF_MONITOR_NODE_PORT      0x02
@@ -41,7 +42,8 @@
 
 #define KRK_CONF_DEFAULT_INTERVAL 5
 #define KRK_CONF_DEFAULT_TIMEOUT 3
-#define KRK_CONF_DEFAULT_THRESHOLD 3
+#define KRK_CONF_DEFAULT_F_THRESHOLD 3
+#define KRK_CONF_DEFAULT_S_THRESHOLD 3
 
 struct krk_config_node {
     struct krk_config_node *next;
@@ -63,7 +65,8 @@ struct krk_config_monitor {
 
     unsigned long interval;
     unsigned long timeout;
-    unsigned long threshold;
+    unsigned long failure_threshold;
+    unsigned long success_threshold;
 
     /* args of node */
     struct krk_config_node *node;

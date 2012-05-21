@@ -351,7 +351,7 @@ static int krk_config_monitor_timeout(struct krk_config_param *param, void *arg,
     return KRK_OK;
 }
 
-static int krk_config_monitor_threshold(struct krk_config_param *param, void *arg,
+static int krk_config_monitor_failure_threshold(struct krk_config_param *param, void *arg,
                 xmlDocPtr doc, xmlNodePtr cur)
 {
     struct krk_config_monitor *monitor = arg;
@@ -368,13 +368,43 @@ static int krk_config_monitor_threshold(struct krk_config_param *param, void *ar
 
     for (i = 0; i < strlen(config_value); i++) {
         if (!isdigit(config_value[i])) {
-            printf("threshold configuration is not number!\n");
+            printf("failure threshold configuration is not number!\n");
             return KRK_ERROR;
         }
     }
 
-    monitor->threshold = atol(config_value);
-    if ((long)monitor->threshold < 0) {
+    monitor->failure_threshold = atol(config_value);
+    if ((long)monitor->failure_threshold < 0) {
+        return KRK_ERROR;
+    }
+
+    return KRK_OK;
+}
+
+static int krk_config_monitor_success_threshold(struct krk_config_param *param, void *arg,
+                xmlDocPtr doc, xmlNodePtr cur)
+{
+    struct krk_config_monitor *monitor = arg;
+    char config_value[KRK_CONFIG_MAX_LEN] = {};
+    int i = 0;
+    int ret = 0;
+
+    ret = krk_config_parse_first(param, config_value, 
+                        sizeof(config_value),  
+                        &monitor->config, doc, cur);
+    if (ret < 0) {
+        return KRK_ERROR;
+    }
+
+    for (i = 0; i < strlen(config_value); i++) {
+        if (!isdigit(config_value[i])) {
+            printf("success threshold configuration is not number!\n");
+            return KRK_ERROR;
+        }
+    }
+
+    monitor->success_threshold = atol(config_value);
+    if ((long)monitor->success_threshold < 0) {
         return KRK_ERROR;
     }
 
@@ -406,7 +436,8 @@ static struct krk_config_parser krk_monitor_parser[] = {
     {{"checker-param", KRK_CONF_MONITOR_CHECKER_PARAM}, krk_config_monitor_checker_param},
     {{"interval", KRK_CONF_MONITOR_INTERVAL}, krk_config_monitor_interval},
     {{"timeout", KRK_CONF_MONITOR_TIMEOUT}, krk_config_monitor_timeout},
-    {{"threshold", KRK_CONF_MONITOR_THRESHOLD}, krk_config_monitor_threshold},
+    {{"failure-threshold", KRK_CONF_MONITOR_F_THRESHOLD}, krk_config_monitor_failure_threshold},
+    {{"success-threshold", KRK_CONF_MONITOR_S_THRESHOLD}, krk_config_monitor_success_threshold},
     {{"script", KRK_CONF_MONITOR_SCRIPT}, krk_config_monitor_script},
     {{"node", 0}, krk_config_monitor_node},
 };
@@ -552,7 +583,8 @@ static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor,
 
     monitor->interval = conf_monitor->interval;
     monitor->timeout = conf_monitor->timeout;
-    monitor->threshold = conf_monitor->threshold;
+    monitor->failure_threshold = conf_monitor->failure_threshold;
+    monitor->success_threshold = conf_monitor->success_threshold;
 
     if (!strcmp(conf_monitor->checker, "https")) {
         monitor->ssl_flag = 1;

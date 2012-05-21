@@ -41,7 +41,8 @@ struct krk_monitor {
 
     unsigned long interval;
     unsigned long timeout;
-    unsigned long threshold;
+    unsigned long failure_threshold;
+    unsigned long success_threshold;
 
     struct krk_checker *checker;
     void *checker_param;
@@ -65,7 +66,8 @@ struct krk_monitor {
 struct krk_node {
     char addr[KRK_IPADDR_LEN];
     unsigned int port;
-    unsigned int nr_fails;
+    unsigned int nr_fail;
+    unsigned int nr_success;
     unsigned char id;
 
     union {

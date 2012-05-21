@@ -140,8 +140,8 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
                 /* TODO: just log, do nothing */
             } 
 
-            krk_log(KRK_LOG_INFO, "node %s:%d, nr_fails: %u\n", 
-                    tmp->addr, tmp->port, tmp->nr_fails); 
+            krk_log(KRK_LOG_INFO, "node %s:%d, nr_fail: %u, nr_success: %u\n", 
+                    tmp->addr, tmp->port, tmp->nr_fail, tmp->nr_success); 
         }
     }
 
@@ -639,7 +639,8 @@ static void krk_monitor_show_node(struct krk_node *node)
     printf("------------node------------\n");
     printf("node addr = %s\n", node->addr);
     printf("node port = %u\n", node->port);
-    printf("node nr_fails = %u\n", node->nr_fails);
+    printf("node nr_fail = %u\n", node->nr_fail);
+    printf("node nr_success = %u\n", node->nr_success);
     printf("node id = %d\n", node->id);
     printf("node ipv6 = %d\n", node->ipv6);
     printf("node down = %d\n", node->down);
@@ -658,7 +659,8 @@ static void krk_monitor_show_one(struct krk_monitor *monitor)
     printf("id = %d\n",monitor->id);
     printf("interval = %lu\n",monitor->interval);
     printf("timeout = %lu\n",monitor->timeout);
-    printf("threshold = %lu\n",monitor->threshold);
+    printf("failure threshold = %lu\n",monitor->failure_threshold);
+    printf("success threshold = %lu\n",monitor->success_threshold);
 
     krk_monitor_show_checker(monitor->checker);
 
@@ -728,9 +730,10 @@ int krk_monitor_exit(void)
 void krk_monitor_node_failure_inc(struct krk_monitor *monitor, 
         struct krk_node *node)
 {
-    node->nr_fails++;
-    if (node->nr_fails == monitor->threshold) {
-        node->nr_fails = 0;
+    node->nr_fail++;
+    if (node->nr_fail == monitor->failure_threshold) {
+        node->nr_fail = 0;
+        node->nr_success = 0;
         if (!node->down) {
             node->down = 1;
             krk_monitor_notify(monitor, node);
@@ -741,4 +744,13 @@ void krk_monitor_node_failure_inc(struct krk_monitor *monitor,
 void krk_monitor_node_success_inc(struct krk_monitor *monitor, 
         struct krk_node *node)
 {
+    node->nr_success++;
+    if (node->nr_success == monitor->success_threshold) {
+        node->nr_success = 0;
+        node->nr_fail = 0;
+        if (node->down) {
+            node->down = 0;
+            krk_monitor_notify(monitor, node);
+        }
+    }
 }

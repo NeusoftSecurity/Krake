@@ -156,12 +156,9 @@ static void icmp_read_handler(int sock, short type, void *arg)
         if (icp->type == ICMP_ECHOREPLY) {
             if (icmp_match_packet(icp, node)) {
                 krk_log(KRK_LOG_DEBUG, "got correct icmp reply\n");
-                node->nr_fails = 0;
-                if (node->down) {
-                    node->down = 0;
-                    krk_monitor_notify(monitor, node);
-                    //icmp_handle_same_addr_node(node);
-                }
+                
+                krk_monitor_node_success_inc(monitor, node);
+                //icmp_handle_same_addr_node(node);
             } else {
                 krk_log(KRK_LOG_DEBUG, "id not match\n");
                 free(packet);

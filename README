@@ -7,15 +7,16 @@ Example:
 <?xml version="1.0"?>
 <krk_config>
     <monitor>                               <!--Keyword for krake configuration, monitor can more than one-->
-        <name>krk_monitor1</name>           <!--name of a monitor-->
+        <name>monitor1</name>           <!--name of a monitor-->
         <status>enable</status>             <!--Only can be enable or disable; 
                                             when enable, also starts the monitor's timer;
                                             when disable, also stops the monitor's timer-->
         <checker>http</checker>             <!--specify a checker using by a monitor-->
         <checker-param>b</checker-param>    <!--checker's parameters-->
         <interval>5</interval>              <!--interval of monitor's timer in seconds-->
-        <timeout>1</timeout>               <!--time out value of checked host in seconds-->
-        <threshold>6</threshold>            <!--how many times of failures happens, marking host as down-->
+        <timeout>3</timeout>               <!--time out value of checked host in seconds-->
+        <failure_threshold>3</failure_threshold>            <!--how many times of failures happen, marking host as down-->
+        <success_threshold>3</success_threshold>            <!--how many times of successes happen, marking host as up-->
         <node>
             <host>10.1.1.2</host>               <!--ip address of a checked host, either ipv4 or ipv6 address is valid-->
             <port>8080</port>                   <!--port number of a checked host, range is 1 ~ 65535-->
