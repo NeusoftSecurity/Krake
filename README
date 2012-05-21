@@ -1,7 +1,7 @@
 For installation, read the file INSTALL
 For configuration, read following:
 
-Default configuration file: krake-config.xml 
+Default configuration file: krake.conf 
 Example:
 
 <?xml version="1.0"?>
