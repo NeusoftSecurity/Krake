@@ -152,6 +152,8 @@ static inline pid_t krk_get_daemon_pid(void)
  */
 static inline int __krk_smooth_quit(void)
 {
+	krk_local_socket_exit();
+
     krk_remove_pid_file();
 
     krk_monitor_exit();
@@ -193,21 +195,37 @@ static inline void krk_child_quit(int signo)
 
 #define KRK_CONFIG_FILE_NAME_LEN 200
 
-static char config_file[KRK_CONFIG_FILE_NAME_LEN] = {};
+char krk_config_file[KRK_CONFIG_FILE_NAME_LEN] = {};
 
-void *krk_reload_config_proc(void *arg)
+static inline void krk_reload_config(void)
 {
-    krk_config_load(config_file);
+	struct sockaddr_un addr;
+    char msg[] = {"reload"};
+    int sockfd = 0;
+    int snd_len = 0;
+    int ret = 0;
 
-    return NULL;
-}
+	sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (sockfd < 0) {
+		perror("socket");
+		return;
+	}
 
-static inline void krk_reload_config(int signo)
-{
-    pthread_t thread_id;
+	memset(&addr, 0, sizeof(struct sockaddr_un));
+	addr.sun_family = AF_UNIX;
+	strncpy(addr.sun_path, LOCAL_SOCK_PATH, 
+			sizeof(addr.sun_path) - 1);
 
-    pthread_create(&thread_id, NULL, krk_reload_config_proc, NULL);
-    pthread_join(thread_id, NULL);
+	ret = connect(sockfd, (struct sockaddr*)&addr, sizeof(struct sockaddr_un));
+	if (ret < 0) {
+		perror("connect");
+		return;
+	}
+
+	snd_len = send(sockfd, msg, sizeof(msg), 0);
+    if (snd_len < 0) {
+        perror("send");
+    }
 }
 
 static inline void krk_show_config(int signo)
@@ -224,7 +242,6 @@ static inline void krk_signals(void)
     signal(SIGSEGV, krk_smooth_quit);
     signal(SIGBUS, krk_smooth_quit);
     signal(SIGCHLD, krk_child_quit);
-    signal(SIGUSR1, krk_reload_config);
     signal(SIGUSR2, krk_show_config);
 }
 
@@ -233,7 +250,7 @@ int main(int argc, char* argv[])
     pid_t pid;
     int opt, quit = 0;
 
-    strncpy(config_file, KRK_DEFAULT_CONF, KRK_CONFIG_FILE_NAME_LEN);
+    strncpy(krk_config_file, KRK_DEFAULT_CONF, KRK_CONFIG_FILE_NAME_LEN);
 
     while (1) {
         opt = getopt_long(argc, argv, optstring, optlong, NULL);
@@ -254,15 +271,10 @@ int main(int argc, char* argv[])
                 if (strlen(optarg) > KRK_CONFIG_FILE_NAME_LEN) {
                     quit = 1;
                 }
-                strcpy(config_file, optarg);
+                strcpy(krk_config_file, optarg);
                 break;
             case 'r':
-                pid = krk_get_daemon_pid();
-                if (pid < 0) {
-                    printf("Reload configuration failed!\n");
-                    return -1;
-                }
-                kill(pid, SIGUSR1);
+                krk_reload_config();
                 return 0;
             case 's':
                 pid = krk_get_daemon_pid();
@@ -321,13 +333,18 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+	if (krk_local_socket_init()) {
+		fprintf(stderr, "Fatal: init event failed\n");
+		return 1;
+	}
+
     if (krk_monitor_init()) {
         krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
         krk_remove_pid_file();
         return 1;
     }
 
-    if (krk_config_load(config_file)) {
+    if (krk_config_load(krk_config_file)) {
         krk_log(KRK_LOG_ALERT, "Fatal: failed to load configuration file!\n");
         krk_remove_pid_file();
         return 1;

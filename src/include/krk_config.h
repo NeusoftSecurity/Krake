@@ -89,6 +89,8 @@ struct krk_config_ret {
     unsigned int data_len;
 };
 
-extern int krk_config_load (char *config_file);
+extern int krk_config_load(char *config_file);
+extern void krk_config_read(int sock, short type, void *arg);
+extern void krk_config_write(int sock, short type, void *arg);
 
 #endif

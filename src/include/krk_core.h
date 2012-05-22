@@ -42,4 +42,6 @@
 #define KRK_IPADDR_LEN 64
 #define KRK_ARG_LEN 32
 
+extern char krk_config_file[];
+
 #endif

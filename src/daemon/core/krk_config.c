@@ -739,3 +739,45 @@ out:
 
     return ret;
 }
+
+#define KRK_RCV_BUF_LEN 10
+
+void krk_config_read(int sock, short type, void *arg)
+{
+	int n, ret;
+	struct krk_event *rev;
+	struct krk_connection *conn;
+    char rcv_buf[KRK_RCV_BUF_LEN] = {};
+	
+	rev = arg;
+	conn = rev->conn;
+	
+	n = recv(sock, rcv_buf, sizeof(rcv_buf), 0);
+	if (n == 0) {
+		/* fprintf(stderr, "read config finished\n"); */
+		krk_connection_destroy(conn);
+		return;
+	}
+
+	if (n < 0) {
+		/* fprintf(stderr, "read config error\n"); */
+		krk_connection_destroy(conn);
+		return;
+	}
+
+    if (!strcmp(rcv_buf, "reload")) {
+        if (krk_config_load(krk_config_file)) {
+            printf("reload configuration failed!");
+        }
+    } else if (!strcmp(rcv_buf, "show")) {
+    } else {
+        return;
+    }
+
+	krk_event_set_read(sock, rev);
+	krk_event_add(rev);
+}
+
+void krk_config_write(int sock, short type, void *arg)
+{
+}
