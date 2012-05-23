@@ -106,6 +106,10 @@ int krk_connection_destroy(struct krk_connection *conn)
 
     list_del(&conn->list);
 
+    if (conn->ssl != NULL) {
+        krk_ssl_destroy_connection(conn->ssl);
+    }
+
     free(conn);
 
     krk_nr_connections--;
@@ -169,7 +173,7 @@ krk_connection_ssl_init(struct krk_connection *conn, struct krk_ssl *ssl)
 }
 
 /**
- * krk_connection_ssl_init - init ssl for a connection
+ * krk_connection_ssl_handshake - handshake a ssl connection
  * @
  * 
  * return KRK_OK for success;

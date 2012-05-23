@@ -39,6 +39,8 @@ void krk_monitor_notify(struct krk_monitor *monitor,
 int krk_monitor_add_node_connection(struct krk_node *node, struct krk_connection *conn);
 int krk_monitor_remove_node_connection(struct krk_node *node, struct krk_connection *conn);
 
+void krk_monitor_destroy_ssl(struct krk_monitor *monitor);
+
 LIST_HEAD(krk_all_monitors);
 unsigned int krk_max_monitors = 0;
 unsigned int krk_nr_monitors = 0;
@@ -227,6 +229,8 @@ int krk_monitor_destroy(struct krk_monitor *monitor)
         free(monitor->parsed_checker_param);
     }
 
+    krk_monitor_destroy_ssl(monitor);
+    
     free(monitor);
 
     krk_nr_monitors--;
@@ -572,6 +576,13 @@ int krk_monitor_init_ssl(struct krk_monitor *monitor)
     return krk_ssl_init_ctx(monitor->ssl);
 }
 
+void krk_monitor_destroy_ssl(struct krk_monitor *monitor)
+{
+    if (monitor->ssl) {
+        krk_ssl_free_ctx(monitor->ssl);
+    }
+}
+
 int krk_monitor_get_all_nodes(struct krk_monitor *monitor, 
         struct krk_node *nodes) 
 {
@@ -740,4 +751,10 @@ void krk_monitor_node_success_inc(struct krk_monitor *monitor,
             krk_monitor_notify(monitor, node);
         }
     }
+}
+
+void krk_monitor_node_cleanup(struct krk_node *node, struct krk_connection *conn)
+{
+    krk_monitor_remove_node_connection(node, conn);
+    krk_connection_destroy(conn);
 }

@@ -30,6 +30,7 @@ struct krk_ssl_connection {
     krk_ssl_socket *ssl_connection;
 
     int handshaked:1;
+    int inited:1;
 };
 
 extern int krk_ssl_init(void);

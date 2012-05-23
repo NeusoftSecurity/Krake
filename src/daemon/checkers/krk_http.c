@@ -477,8 +477,7 @@ static void http_read_handler(int sock, short type, void *arg)
 out:
     node->buf->pos = node->buf->last = node->buf->head;
 
-    krk_monitor_remove_node_connection(node, conn);
-    krk_connection_destroy(conn);
+    krk_monitor_node_cleanup(node, conn);
 }
 
 static void http_write_handler(int sock, short type, void *arg)
@@ -542,8 +541,7 @@ out:
     return;
 
 failed:
-    krk_monitor_remove_node_connection(node, conn);
-    krk_connection_destroy(conn);
+    krk_monitor_node_cleanup(node, conn);
 
     goto out;
 }
@@ -590,12 +588,6 @@ static int http_init_ssl(struct krk_node *node, struct krk_connection *conn)
 
     monitor = node->parent;
 
-    /*
-    if (krk_monitor_init_ssl(monitor) != KRK_OK) {
-        return KRK_ERROR;
-    }
-    */
-
     /* init connection's SSL struct by node's SSL_CTX */
     if (krk_connection_ssl_init(conn, monitor->ssl) != KRK_OK ) {
         return KRK_ERROR;
@@ -603,6 +595,9 @@ static int http_init_ssl(struct krk_node *node, struct krk_connection *conn)
 
     /* handshake with the server */
     ret = krk_connection_ssl_handshake(conn);
+    
+    krk_log(KRK_LOG_DEBUG, "ssl handshake, ret: %d\n", ret);
+    
     if (ret == KRK_AGAIN_WRITE) {
         krk_monitor_add_node_connection(node, conn);
 
@@ -656,11 +651,11 @@ static void http_check_ssl_handler(int sock, short type, void *arg)
 
     if (type == EV_TIMEOUT) {
         krk_monitor_node_failure_inc(monitor, node);
+        krk_monitor_node_cleanup(node, conn);
         
         return;
     }
 
-    /* TODO: ssl handshake again */
     ret = krk_connection_ssl_handshake(conn);
     if (ret == KRK_AGAIN_WRITE) {
         krk_monitor_add_node_connection(node, conn);
@@ -700,9 +695,11 @@ static void http_check_ssl_handler(int sock, short type, void *arg)
         conn->wev->timeout->tv_usec = 0;
         krk_event_set_write(conn->sock, conn->wev);
         krk_event_add(conn->wev);
+    } else if (ret == KRK_ERROR) {
+        /* failed */
+        krk_monitor_node_failure_inc(monitor, node);
+        krk_monitor_node_cleanup(node, conn);
     }
-
-    /* failed */
 
     return;
 }
@@ -729,6 +726,7 @@ static void http_check_tcp_handler(int sock, short type, void *arg)
                 krk_log(KRK_LOG_DEBUG, "http: tcp connect failed(%d)!\n", errno);
                 
                 krk_monitor_node_failure_inc(monitor, node);
+                krk_monitor_node_cleanup(node, conn);
 
                 return;
             }
@@ -737,17 +735,18 @@ static void http_check_tcp_handler(int sock, short type, void *arg)
         krk_log(KRK_LOG_DEBUG, "http: tcp connect failed(time out)!\n");
         
         krk_monitor_node_failure_inc(monitor, node);
+        krk_monitor_node_cleanup(node, conn);
 
         return;
     }
 
     /* connect ok */
 
-    /* TODO: handle ssl */
     if (monitor->ssl_flag) {
         ret = http_init_ssl(node, conn);
         if (ret == KRK_ERROR) {
             krk_monitor_node_failure_inc(monitor, node);
+            krk_monitor_node_cleanup(node, conn);
             return;
         }
         
@@ -755,6 +754,8 @@ static void http_check_tcp_handler(int sock, short type, void *arg)
             return;
         }
     }
+
+    /* ssl ok if configured */
 
     krk_monitor_add_node_connection(node, conn);
     
@@ -766,6 +767,7 @@ static void http_check_tcp_handler(int sock, short type, void *arg)
 
     conn->wev->timeout->tv_sec = monitor->timeout;
     conn->wev->timeout->tv_usec = 0;
+    
     krk_event_set_write(conn->sock, conn->wev);
     krk_event_add(conn->wev);
 
@@ -778,6 +780,8 @@ static int http_process_node(struct krk_node *node, void *param)
     struct krk_connection *conn;
     struct krk_monitor *monitor;
 
+    krk_log(KRK_LOG_DEBUG, "http process node\n");
+    
     if (node->conn)
         return KRK_OK;
 
@@ -815,6 +819,8 @@ static int http_process_node(struct krk_node *node, void *param)
     }
 
     if (errno == EINPROGRESS) {
+        krk_log(KRK_LOG_DEBUG, "tcp connect returns INPROGRESS\n");
+        
         conn->wev->handler = http_check_tcp_handler;
 
         conn->rev->data = node;
@@ -832,11 +838,12 @@ static int http_process_node(struct krk_node *node, void *param)
     
     conn->ready = 1;
 
-    /* TODO: if ssl enabled, handshake ssl here */
     if (monitor->ssl_flag) {
         ret = http_init_ssl(node, conn);
         if (ret == KRK_ERROR) {
             krk_monitor_node_failure_inc(monitor, node);
+            krk_monitor_node_cleanup(node, conn);
+        
             return ret;
         }
         
@@ -855,6 +862,7 @@ static int http_process_node(struct krk_node *node, void *param)
 
     conn->wev->timeout->tv_sec = monitor->timeout;
     conn->wev->timeout->tv_usec = 0;
+    
     krk_event_set_write(conn->sock, conn->wev);
     krk_event_add(conn->wev);
 

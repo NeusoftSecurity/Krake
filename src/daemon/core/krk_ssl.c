@@ -50,6 +50,15 @@ struct krk_ssl* krk_ssl_new_ctx(void)
     return ssl;
 }
 
+void krk_ssl_free_ctx(struct krk_ssl *ssl)
+{
+    if (!ssl) 
+        return;
+
+    SSL_CTX_free(ssl->ctx);
+    free(ssl);
+}
+
 static void
 krk_ssl_info_callback(const SSL *ssl, int where, int ret)
 {
@@ -108,7 +117,22 @@ krk_ssl_create_connection(int sock, struct krk_ssl *ssl)
 
     SSL_set_connect_state(sc->ssl_connection);
 
+    sc->inited = 1;
+
     return sc;
+}
+
+void krk_ssl_destroy_connection(struct krk_ssl_connection *sc)
+{
+    if (sc->inited) {
+        if (sc->handshaked) {
+            SSL_shutdown(sc->ssl_connection);
+        }
+
+        SSL_free(sc->ssl_connection);
+    }
+
+    free(sc);
 }
 
 void krk_ssl_clear_error(void)

@@ -13,6 +13,7 @@
 #include <krk_core.h>
 #include <krk_event.h>
 #include <krk_buffer.h>
+#include <krk_log.h>
 
 int krk_event_init(void);
 void krk_event_loop(void);
@@ -48,7 +49,6 @@ struct krk_event* krk_event_create(size_t bufsz)
 
     event->buf = krk_buffer_create(bufsz);
     if (!event->buf) {
-        free(event->ev);
         free(event);
         return NULL;
     }
@@ -139,6 +139,7 @@ void krk_event_set(int sock, struct krk_event *event, short type)
 
     event->ev = event_new(krk_event_base, sock, type, event->handler, (void*)event);
     if (event->ev == NULL) {
+        krk_log(KRK_LOG_DEBUG, "ev-%p: event_new failed in %s\n", event, __func__);
         /* FIXME: do some thing here */
     }
 }
@@ -151,6 +152,7 @@ void krk_event_set_timer(struct krk_event *tmout)
 
     tmout->ev = evtimer_new(krk_event_base, tmout->handler, (void*)tmout);
     if (tmout->ev == NULL) {
+        krk_log(KRK_LOG_DEBUG, "ev-%p: event_new failed in %s\n", tmout, __func__);
         /* FIXME: do some thing here */
     }
 }
