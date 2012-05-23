@@ -115,17 +115,6 @@ if test "$LXML2" = "no"; then
     exit
 fi
 
-LPTHREAD=""
-AC_CHECK_LIB([pthread], [pthread_create], , LPTHREAD="no")
-
-if test "$LPTHREAD" = "no"; then
-    echo
-    echo "   ERROR!  pthread library not found, go get it from"
-    echo "   http://www.gnu.org/software/hurd/libpthread.html"
-    exit
-fi
-
-
 # Checks for header files.
 LEVENT=""
 AC_CHECK_HEADERS([event.h], , LEVENT="no")

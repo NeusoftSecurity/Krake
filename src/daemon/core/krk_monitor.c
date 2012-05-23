@@ -126,7 +126,6 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
     ev = arg;
     monitor = ev->data;
 
-    pthread_mutex_lock(&monitor->mutex);
     list_for_each_safe(p, n, &monitor->node_list) {
         tmp = list_entry(p, struct krk_node, list);
 
@@ -146,7 +145,6 @@ void krk_monitor_timeout_handler(int sock, short type, void *arg)
     }
 
     krk_event_add(monitor->tmout_ev);
-    pthread_mutex_unlock(&monitor->mutex);
 }
 
 /**
@@ -186,13 +184,6 @@ struct krk_monitor* krk_monitor_create(const char *name)
 
     memset(monitor, 0, sizeof(struct krk_monitor));
     INIT_LIST_HEAD(&monitor->node_list);
-
-    ret = pthread_mutex_init(&monitor->mutex, NULL);
-    if (ret != 0) {
-        free(monitor);
-        printf("init mutex failed!\n");
-        return NULL;
-    }
 
     monitor->tmout_ev = krk_event_create(0);
     if (monitor->tmout_ev == NULL) {
@@ -235,8 +226,6 @@ int krk_monitor_destroy(struct krk_monitor *monitor)
     if (monitor->parsed_checker_param) {
         free(monitor->parsed_checker_param);
     }
-
-    pthread_mutex_destroy(&monitor->mutex);
 
     free(monitor);
 
@@ -653,7 +642,6 @@ static void krk_monitor_show_one(struct krk_monitor *monitor)
     struct list_head *k, *m;
     struct krk_node *node;
 
-    pthread_mutex_lock(&monitor->mutex);
     printf("============monitor============\n");
     printf("monitor name = %s\n",monitor->name);
     printf("id = %d\n",monitor->id);
@@ -674,7 +662,6 @@ static void krk_monitor_show_one(struct krk_monitor *monitor)
         krk_monitor_show_node(node);
     }
     printf("============monitor end============\n");
-    pthread_mutex_unlock(&monitor->mutex);
 }
 
 void krk_monitor_show(void)

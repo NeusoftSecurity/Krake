@@ -18,7 +18,6 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
-#include <pthread.h>
 
 #include <krk_core.h>
 #include <krk_list.h>
@@ -34,7 +33,6 @@
 
 struct krk_monitor {
     char name[KRK_NAME_LEN];
-    pthread_mutex_t mutex;
     unsigned char id;
 
     struct list_head list;

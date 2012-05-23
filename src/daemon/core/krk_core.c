@@ -226,6 +226,8 @@ static inline void krk_reload_config(void)
     if (snd_len < 0) {
         perror("send");
     }
+
+    close(sockfd);
 }
 
 static inline void krk_show_config(int signo)

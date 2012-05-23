@@ -579,8 +579,6 @@ static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor,
     struct krk_node *node = NULL;
     int ret = KRK_OK;
 
-    pthread_mutex_lock(&monitor->mutex);
-
     monitor->interval = conf_monitor->interval;
     monitor->timeout = conf_monitor->timeout;
     monitor->failure_threshold = conf_monitor->failure_threshold;
@@ -660,8 +658,6 @@ static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor,
     }
 
 out:
-    pthread_mutex_unlock(&monitor->mutex);
-
     return ret;
 }
 
@@ -770,6 +766,7 @@ void krk_config_read(int sock, short type, void *arg)
             printf("reload configuration failed!");
         }
     } else if (!strcmp(rcv_buf, "show")) {
+        krk_monitor_show();
     } else {
         return;
     }
