@@ -702,6 +702,8 @@ static void http_check_ssl_handler(int sock, short type, void *arg)
         krk_event_add(conn->wev);
     }
 
+    /* failed */
+
     return;
 }
 

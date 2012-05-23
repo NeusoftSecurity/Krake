@@ -25,6 +25,8 @@ void krk_event_set_timer(struct krk_event *tmout);
 void krk_event_set_read(int sock, struct krk_event *event);
 void krk_event_set_write(int sock, struct krk_event *event);
 
+/* the global event_base */
+static struct event_base *krk_event_base = NULL;
 
 /**
  * krk_event_create - create a new event
@@ -43,14 +45,6 @@ struct krk_event* krk_event_create(size_t bufsz)
     }
 
     memset(event, 0, sizeof(struct krk_event));
-
-    event->ev = malloc(sizeof(struct event));
-    if (!event->ev) {
-        free(event);
-        return NULL;
-    }
-
-    memset(event->ev, 0, sizeof(struct event));
 
     event->buf = krk_buffer_create(bufsz);
     if (!event->buf) {
@@ -79,10 +73,8 @@ int krk_event_destroy(struct krk_event* event)
         return -1;
     }
 
-    krk_event_del(event);
-
     if (event->ev) {
-        free(event->ev);
+        event_free(event->ev);
     }
 
     if (event->timeout) {
@@ -107,9 +99,12 @@ int krk_event_destroy(struct krk_event* event)
  */
 int krk_event_init(void)
 {
-    event_init();
+    krk_event_base = event_base_new();
+    if (krk_event_base == NULL) {
+        return KRK_ERROR;
+    }
 
-    return 0;
+    return KRK_OK;
 }
 
 /**
@@ -120,7 +115,9 @@ int krk_event_init(void)
  */
 int krk_event_exit(void)
 {
-    return 0;
+    event_base_free(krk_event_base);
+
+    return KRK_OK;
 }
 
 int krk_event_add(struct krk_event *event)
@@ -135,12 +132,27 @@ int krk_event_del(struct krk_event *event)
 
 void krk_event_set(int sock, struct krk_event *event, short type)
 {
-    event_set(event->ev, sock, type, event->handler, (void*)event);
+    /* set here means delete the old one and assign a new one */
+    if (event->ev) {
+        event_free(event->ev);
+    }
+
+    event->ev = event_new(krk_event_base, sock, type, event->handler, (void*)event);
+    if (event->ev == NULL) {
+        /* FIXME: do some thing here */
+    }
 }
 
 void krk_event_set_timer(struct krk_event *tmout)
 {
-    evtimer_set(tmout->ev, tmout->handler, (void*)tmout);
+    if (tmout->ev) {
+        event_free(tmout->ev);
+    }
+
+    tmout->ev = evtimer_new(krk_event_base, tmout->handler, (void*)tmout);
+    if (tmout->ev == NULL) {
+        /* FIXME: do some thing here */
+    }
 }
 
 void krk_event_set_read(int sock, struct krk_event *event)
@@ -155,6 +167,7 @@ void krk_event_set_write(int sock, struct krk_event *event)
 
 void krk_event_loop(void)
 {
-    event_dispatch();
+    /* FIXME: use EVLOOP_NO_EXIT_ON_EMPTY as the flag in higher version libevent */
+    event_base_loop(krk_event_base, 0);
 }
 

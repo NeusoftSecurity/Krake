@@ -13,7 +13,7 @@
 #ifndef __KRK_EVENT_H__
 #define __KRK_EVENT_H__
 
-#include <event.h>
+#include <event2/event.h>
 
 typedef void (*ev_handler)(int sock, short type, void *arg);
 
