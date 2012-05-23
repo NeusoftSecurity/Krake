@@ -436,8 +436,8 @@ static struct krk_config_parser krk_monitor_parser[] = {
     {{"checker-param", KRK_CONF_MONITOR_CHECKER_PARAM}, krk_config_monitor_checker_param},
     {{"interval", KRK_CONF_MONITOR_INTERVAL}, krk_config_monitor_interval},
     {{"timeout", KRK_CONF_MONITOR_TIMEOUT}, krk_config_monitor_timeout},
-    {{"failure-threshold", KRK_CONF_MONITOR_F_THRESHOLD}, krk_config_monitor_failure_threshold},
-    {{"success-threshold", KRK_CONF_MONITOR_S_THRESHOLD}, krk_config_monitor_success_threshold},
+    {{"failure_threshold", KRK_CONF_MONITOR_F_THRESHOLD}, krk_config_monitor_failure_threshold},
+    {{"success_threshold", KRK_CONF_MONITOR_S_THRESHOLD}, krk_config_monitor_success_threshold},
     {{"script", KRK_CONF_MONITOR_SCRIPT}, krk_config_monitor_script},
     {{"node", 0}, krk_config_monitor_node},
 };
