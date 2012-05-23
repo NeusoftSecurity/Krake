@@ -14,3 +14,6 @@
 *) health status(red, yellow, green), depending on the response time of the detected node
 *) support cloud checker. this means krake could use the cloud platform API to check the health status of the detected node
 *) support cloud actions. auto-scaling feature.
+*) configuration file syntax check
+*) configuration file not automatically overwritten
+*) detail README file in Chinese, English and German.
