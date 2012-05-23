@@ -1,8 +1,13 @@
-*) professional --help/--version output of the krake daemon #no need any more
-*) make the autoconf/automake toolchain more useful. now we plan to support xBSD and Linux #Done
-*) change cli/daemon mode to configuration file #In Progress
-*) support https checker #In Progress
+(DONE) 
+*) make the autoconf/automake toolchain more useful. now we plan to support xBSD and Linux
+*) change cli/daemon mode to configuration file
+*) support https checker
 *) support success threshold
+
+(IN PROGRESS)
+
+
+(TODO)
 *) support ipv6
 *) a more reasonable notification mechanism to other components
 *) maybe other protocols
