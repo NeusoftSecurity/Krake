@@ -70,7 +70,7 @@ static inline int krk_daemonize(void)
 
     umask(0);
 
-    fclose(stderr);
+    //fclose(stderr);
 
     return 0;
 }
@@ -335,10 +335,10 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-	if (krk_local_socket_init()) {
-		fprintf(stderr, "Fatal: init event failed\n");
-		return 1;
-	}
+    if (krk_local_socket_init()) {
+        fprintf(stderr, "Fatal: init event failed\n");
+        return 1;
+    }
 
     if (krk_monitor_init()) {
         krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
