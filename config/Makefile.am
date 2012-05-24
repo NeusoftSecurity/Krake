@@ -1,2 +1,3 @@
 confdir = $(prefix)/etc
-conf_DATA = krake.conf
+install-data-local:
+	cp -n ${srcdir}/krake.conf ${confdir}
