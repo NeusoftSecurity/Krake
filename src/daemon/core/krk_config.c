@@ -79,21 +79,39 @@ static int krk_config_parse_xml_node(struct krk_config_parser *conf_parser,
 {
     struct krk_config_parser *c_parser = NULL;
     int p = 0;
+    int valid = 0;
     int ret = 0;
     
 	cur = cur->xmlChildrenNode;
 	while (cur != NULL) {
+        if ((!xmlStrcmp(cur->name, "text"))) {
+            goto next_cur;
+        }
+
+        if ((!xmlStrcmp(cur->name, "comment"))) {
+            goto next_cur;
+        }
+
         c_parser = conf_parser;
-        for (p = 0; p < parser_num; p++) {
+        for (p = 0, valid = 0; p < parser_num; p++) {
 		    if ((!xmlStrcmp(cur->name, c_parser->param.key))) {
                 ret = c_parser->parser(&c_parser->param, arg, doc, cur);
                 if (ret < 0) {
                     printf("paese %s failed!\n",c_parser->param.key);
                     return KRK_ERROR;
                 }
+                valid = 1;
+                break;
             }
             c_parser++;
         }
+
+        if (!valid) {
+            printf("%s configuration is invalid!\n",cur->name);
+            return KRK_ERROR;
+        }
+
+next_cur:
         cur = cur->next;
     }
 

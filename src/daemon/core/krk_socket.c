@@ -11,6 +11,8 @@
  * (at your option) any later version.
  */
 
+#include <errno.h>
+
 #include <krk_core.h>
 #include <krk_socket.h>
 #include <krk_event.h>
@@ -76,7 +78,7 @@ static int krk_open_local_socket(void)
 	
 	ret = bind(sock, (struct sockaddr*)&addr, sizeof(struct sockaddr_un));
 	if (ret < 0) {
-		fprintf(stderr, "Fatal: bind unix socket failed\n");
+		fprintf(stderr, "Fatal: bind unix socket failed(errno = %d)\n",errno);
 		return -1;
 	}
 

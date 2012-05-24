@@ -332,16 +332,18 @@ int main(int argc, char* argv[])
 
     if (krk_ssl_init()) {
         krk_log(KRK_LOG_ALERT, "Fatal: init ssl failed\n");
+        krk_remove_pid_file();
         return 1;
     }
 
     if (krk_local_socket_init()) {
-        fprintf(stderr, "Fatal: init event failed\n");
+        krk_log(KRK_LOG_ALERT, "Fatal: init local socket failed\n");
+        krk_remove_pid_file();
         return 1;
     }
 
     if (krk_monitor_init()) {
-        krk_log(KRK_LOG_ALERT, "Fatal: init event failed\n");
+        krk_log(KRK_LOG_ALERT, "Fatal: init monitor failed\n");
         krk_remove_pid_file();
         return 1;
     }
