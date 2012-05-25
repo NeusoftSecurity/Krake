@@ -200,7 +200,7 @@ char krk_config_file[KRK_CONFIG_FILE_NAME_LEN] = {};
 static inline void krk_reload_config(void)
 {
 	struct sockaddr_un addr;
-    char msg[] = {"reload"};
+    struct krk_config_ret conf_ret = {};
     int sockfd = 0;
     int snd_len = 0;
     int ret = 0;
@@ -222,7 +222,8 @@ static inline void krk_reload_config(void)
 		return;
 	}
 
-	snd_len = send(sockfd, msg, sizeof(msg), 0);
+    conf_ret.retval = KRK_CONF_RET_RELOAD; 
+	snd_len = send(sockfd, &conf_ret, sizeof(conf_ret), 0);
     if (snd_len < 0) {
         perror("send");
     }

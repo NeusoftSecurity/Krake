@@ -761,12 +761,12 @@ void krk_config_read(int sock, short type, void *arg)
 	int n, ret;
 	struct krk_event *rev;
 	struct krk_connection *conn;
-    char rcv_buf[KRK_RCV_BUF_LEN] = {};
+    struct krk_config_ret *conf_ret = NULL;
 	
 	rev = arg;
 	conn = rev->conn;
 	
-	n = recv(sock, rcv_buf, sizeof(rcv_buf), 0);
+    n = recv(sock, rev->buf->last, rev->buf->end - rev->buf->last, 0);
 	if (n == 0) {
 		/* fprintf(stderr, "read config finished\n"); */
 		krk_connection_destroy(conn);
@@ -779,14 +779,20 @@ void krk_config_read(int sock, short type, void *arg)
 		return;
 	}
 
-    if (!strcmp(rcv_buf, "reload")) {
-        if (krk_config_load(krk_config_file)) {
-            printf("reload configuration failed!");
-        }
-    } else if (!strcmp(rcv_buf, "show")) {
-        krk_monitor_show();
-    } else {
-        return;
+    conf_ret = (struct krk_config_ret *)rev->buf->last;
+
+    switch (conf_ret->retval) {
+        case KRK_CONF_RET_RELOAD:
+            if (krk_config_load(krk_config_file)) {
+                printf("reload configuration failed!");
+            }
+            break;
+        case KRK_CONF_RET_SHOW_ONE_MONITOR:
+            break;
+        case KRK_CONF_RET_SHOW_ALL_MONITOR:
+            break;
+        default:
+            break;
     }
 
 	krk_event_set_read(sock, rev);

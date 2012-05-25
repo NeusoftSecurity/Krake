@@ -84,6 +84,12 @@ struct krk_config {
     struct krk_config_log log;
 };
 
+enum {
+    KRK_CONF_RET_RELOAD = 1,
+    KRK_CONF_RET_SHOW_ONE_MONITOR,
+    KRK_CONF_RET_SHOW_ALL_MONITOR,
+};
+
 struct krk_config_ret {
     int retval;
     unsigned int data_len;

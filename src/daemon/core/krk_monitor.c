@@ -758,3 +758,25 @@ void krk_monitor_node_cleanup(struct krk_node *node, struct krk_connection *conn
     krk_monitor_remove_node_connection(node, conn);
     krk_connection_destroy(conn);
 }
+
+void krk_get_monitor_info(struct krk_monitor_info *info, 
+        struct krk_monitor *monitor)
+{
+    strncpy(info->name, monitor->name, KRK_NAME_LEN);
+    strncpy(info->checker, monitor->checker->name, KRK_NAME_LEN);
+    info->nr_nodes = monitor->nr_nodes;
+    info->enabled =  monitor->enabled;
+}
+
+void krk_get_node_info(struct krk_node_info *info, 
+        struct krk_node *node)
+{
+    strncpy(info->addr, node->addr, KRK_IPADDR_LEN);
+    info->port = node->port;
+    info->port = node->port;
+    info->nr_fail = node->nr_fail;
+    info->nr_success = node->nr_success;
+    info->ipv6 = node->ipv6;
+    info->down = node->down;
+    info->ready = node->ready;
+}

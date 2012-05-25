@@ -61,6 +61,13 @@ struct krk_monitor {
     unsigned int ssl_flag:1;
 };
 
+struct krk_monitor_info {
+    char name[KRK_NAME_LEN];
+    char checker[KRK_NAME_LEN];
+    unsigned long nr_nodes;
+    unsigned int enabled:1;
+};
+
 struct krk_node {
     char addr[KRK_IPADDR_LEN];
     unsigned int port;
@@ -88,6 +95,17 @@ struct krk_node {
     unsigned int down:1;
     unsigned int ready:1;
 };
+
+struct krk_node_info {
+    char addr[KRK_IPADDR_LEN];
+    unsigned int port;
+    unsigned int nr_fail;
+    unsigned int nr_success;
+    unsigned int ipv6:1;
+    unsigned int down:1;
+    unsigned int ready:1;
+};
+
 
 extern struct krk_monitor* krk_monitor_find(const char *name);
 extern struct krk_monitor* krk_monitor_create(const char *name);
