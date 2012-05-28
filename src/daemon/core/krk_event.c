@@ -53,8 +53,6 @@ struct krk_event* krk_event_create(size_t bufsz)
         return NULL;
     }
 
-    memset(event->buf, 0, bufsz);
-
     return event;
 }
 

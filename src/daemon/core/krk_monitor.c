@@ -403,6 +403,10 @@ struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port)
         return NULL;
     }
 
+    if (krk_nr_nodes > KRK_NODE_MAX_NUM) {
+        return NULL;
+    }
+
     node = malloc(sizeof(struct krk_node));
     if (node == NULL) {
         return NULL;
@@ -715,7 +719,7 @@ int krk_monitor_init(void)
 {
     INIT_LIST_HEAD(&krk_all_monitors);
 
-    krk_max_monitors = 64;
+    krk_max_monitors = KRK_MONITOR_MAX_NR;
 
     return KRK_OK;
 }
@@ -768,11 +772,22 @@ void krk_get_monitor_info(struct krk_monitor_info *info,
     info->enabled =  monitor->enabled;
 }
 
-void krk_get_node_info(struct krk_node_info *info, 
+void krk_show_monitor_info(struct krk_monitor_info *info)
+{
+    printf("monitor name = %s\n",info->name);
+    printf("checker = %s\n",info->checker);
+    printf("node number = %d\n",info->nr_nodes);
+    if (info->enabled) {
+        printf("monitor enabled\n");
+    } else {
+        printf("monitor disabled\n");
+    }
+}
+
+static void krk_get_node_info(struct krk_node_info *info, 
         struct krk_node *node)
 {
     strncpy(info->addr, node->addr, KRK_IPADDR_LEN);
-    info->port = node->port;
     info->port = node->port;
     info->nr_fail = node->nr_fail;
     info->nr_success = node->nr_success;
@@ -780,3 +795,68 @@ void krk_get_node_info(struct krk_node_info *info,
     info->down = node->down;
     info->ready = node->ready;
 }
+
+void krk_show_node_info(struct krk_node_info *info)
+{
+    printf("addr = %s\n",info->addr);
+    printf("port = %d\n",info->port);
+    printf("nr_fail = %d\n",info->nr_fail);
+    printf("nr_success = %d\n",info->nr_success);
+    printf("ipv6 = %d\n",info->ipv6);
+    printf("down = %d\n",info->down);
+    printf("ready = %d\n",info->ready);
+}
+
+size_t krk_info_buffer_size(void)
+{
+    size_t monitor_buf_size = (KRK_MONITOR_MAX_NR * KRK_NAME_LEN);
+    size_t node_buf_size = (sizeof(struct krk_monitor_info) + KRK_NODE_MAX_NUM * sizeof(struct krk_node_info));
+    size_t max_buf_size = monitor_buf_size > node_buf_size?monitor_buf_size:node_buf_size;
+
+    return max_buf_size;
+}
+
+int krk_get_all_monitor_name(char *buf) 
+{
+    struct krk_monitor *monitor;
+    struct list_head *p, *n;
+    int i = 0;
+
+    if (buf == NULL) {
+        return KRK_ERROR;
+    }
+
+    list_for_each_safe(p, n, &krk_all_monitors) {
+        monitor = list_entry(p, struct krk_monitor, list);
+        strcpy(buf + i * KRK_NAME_LEN, monitor->name);
+        i++;
+    }
+
+    return (i * KRK_NAME_LEN);
+}
+
+int krk_monitor_get_all_node_info(struct krk_monitor *monitor, 
+        struct krk_node_info *info) 
+{
+    struct krk_node *node;
+    struct list_head *p, *n;
+    int buf_size = 0;
+    int i = 0;
+
+    if (info == NULL || monitor == NULL) {
+        return KRK_ERROR;
+    }
+
+    list_for_each_safe(p, n, &monitor->node_list) {
+        node = list_entry(p, struct krk_node, list);
+        krk_get_node_info(info, node);
+        info++;
+        i++;
+    }
+
+    buf_size += i * sizeof(struct krk_node_info);
+
+    return buf_size;
+}
+
+

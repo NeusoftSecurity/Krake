@@ -92,7 +92,7 @@ enum {
 
 struct krk_config_ret {
     int retval;
-    unsigned int data_len;
+    char monitor[KRK_NAME_LEN];
 };
 
 extern int krk_config_load(char *config_file);

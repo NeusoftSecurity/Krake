@@ -28,6 +28,7 @@ void krk_local_accept(int listen_sock, short type, void *arg)
 	unsigned int remote_addr_size;
 	struct krk_event *event;
 	struct krk_connection *conn;
+    size_t wbuff_size = krk_info_buffer_size();
 
 	remote_addr_size = sizeof(struct sockaddr_un);
 	sock = accept(listen_sock, (struct sockaddr *)&remote_addr, 
@@ -39,7 +40,7 @@ void krk_local_accept(int listen_sock, short type, void *arg)
 
 	fcntl(sock, F_SETFL, O_NONBLOCK);
 	
-	conn = krk_connection_create("config_conn", 0, 0);
+	conn = krk_connection_create("config_conn", 0, wbuff_size);
 	if (!conn) {
 		goto rearm;
 	}

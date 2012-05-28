@@ -26,17 +26,18 @@ static const struct option optlong[] = {
     {"version", 0, NULL, 'v'},
     {"config", 0, NULL, 'c'},
     {"reload", 0, NULL, 'r'},
+    {"show", 0, NULL, 's'},
     {NULL, 0, NULL, 0}
 };
 
-static const char* optstring = "hvrsc:";
+static const char* optstring = "hvrms:c:";
 
 static void krk_usage(void)
 {
     printf("Usage: krake [option]\n"
             "\t--config/-c		Assign the configruation file\n"
             "\t--reload/-r		Reload the configruation file\n"
-            "\t--show/-s		Show the configruation\n"
+            "\t--show/-s		Show the configruation, -s all for all monitor, -s monitor_name for one monitor\n"
             "\t--version/-v		Show Krake version\n"
             "\t--help/-h		Show this help\n");
 }
@@ -197,18 +198,16 @@ static inline void krk_child_quit(int signo)
 
 char krk_config_file[KRK_CONFIG_FILE_NAME_LEN] = {};
 
-static inline void krk_reload_config(void)
+static inline int krk_connect_local(void)
 {
 	struct sockaddr_un addr;
-    struct krk_config_ret conf_ret = {};
     int sockfd = 0;
-    int snd_len = 0;
     int ret = 0;
 
 	sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		perror("socket");
-		return;
+		return -1;
 	}
 
 	memset(&addr, 0, sizeof(struct sockaddr_un));
@@ -218,7 +217,24 @@ static inline void krk_reload_config(void)
 
 	ret = connect(sockfd, (struct sockaddr*)&addr, sizeof(struct sockaddr_un));
 	if (ret < 0) {
+        close(sockfd);
 		perror("connect");
+		return -1;
+	}
+
+    return sockfd;
+}
+
+static inline void krk_reload_config(void)
+{
+    struct krk_config_ret conf_ret = {};
+    int sockfd = 0;
+    int snd_len = 0;
+    int ret = 0;
+
+	sockfd = krk_connect_local();
+	if (sockfd < 0) {
+		perror("socket");
 		return;
 	}
 
@@ -230,6 +246,85 @@ static inline void krk_reload_config(void)
 
     close(sockfd);
 }
+
+static inline void krk_show_monitor_config(char *name)
+{
+    struct krk_config_ret conf_ret = {};
+    char m_name[KRK_NAME_LEN] = {};
+    void *buf = NULL;
+    void *rcv_buf = NULL;
+    struct krk_node_info *n_info = NULL;
+    int sockfd = 0;
+    int buf_size = 0;
+    int snd_len = 0;
+    int rcv_len = 0;
+    int ret = 0;
+
+    if (!strcmp(name, "all")) {
+        conf_ret.retval = KRK_CONF_RET_SHOW_ALL_MONITOR; 
+        buf_size = KRK_MONITOR_MAX_NR * KRK_NAME_LEN;
+    } else {
+        conf_ret.retval = KRK_CONF_RET_SHOW_ONE_MONITOR; 
+        strncpy(conf_ret.monitor, name, KRK_NAME_LEN);
+        buf_size = (sizeof(struct krk_monitor_info) + KRK_NODE_MAX_NUM * sizeof(struct krk_node_info));
+    }
+
+    buf = calloc(1, buf_size);
+    if (buf == NULL) {
+        printf("alloc mem failed!\n");
+        return;
+    }
+
+	sockfd = krk_connect_local();
+	if (sockfd < 0) {
+		perror("socket");
+        goto out;
+	}
+
+	snd_len = send(sockfd, &conf_ret, sizeof(conf_ret), 0);
+    if (snd_len < sizeof(conf_ret)) {
+        perror("send");
+        goto out;
+    }
+
+    while (1) {
+        rcv_len = recv(sockfd, buf, buf_size, 0);
+        if (rcv_len < 0) {
+            perror("recv");
+            goto out;
+        }
+
+        if (rcv_len == 0) {
+            break;
+        }
+        rcv_buf = buf + rcv_len;
+        buf_size -= rcv_len;
+    }
+
+    if (!strcmp(name, "all")) {
+        while (buf_size > 0) {
+            strncpy(m_name, buf, KRK_NAME_LEN);
+            printf("Monitor: %s\n", m_name);
+            buf_size -= KRK_NAME_LEN;
+        }
+    } else {
+        krk_show_monitor_info(buf);
+        n_info = buf + sizeof(struct krk_monitor_info);
+        printf("node informations:\n");
+        while (buf_size > 0) {
+            krk_show_node_info(n_info);
+            buf_size -= sizeof(struct krk_node_info);
+            n_info++;
+        }
+    }
+
+out:
+    if (buf != NULL) {
+        free(buf);
+    }
+    close(sockfd);
+}
+
 
 static inline void krk_show_config(int signo)
 {
@@ -251,6 +346,7 @@ static inline void krk_signals(void)
 int main(int argc, char* argv[])
 {
     pid_t pid;
+    char monitor[KRK_NAME_LEN] = {};
     int opt, quit = 0;
 
     strncpy(krk_config_file, KRK_DEFAULT_CONF, KRK_CONFIG_FILE_NAME_LEN);
@@ -280,6 +376,10 @@ int main(int argc, char* argv[])
                 krk_reload_config();
                 return 0;
             case 's':
+                strncpy(monitor, optarg, KRK_NAME_LEN);
+                krk_show_monitor_config(monitor);
+                return 0;
+            case 'm':
                 pid = krk_get_daemon_pid();
                 if (pid < 0) {
                     printf("Show configuration failed!\n");

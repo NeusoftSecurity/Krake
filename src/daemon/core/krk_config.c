@@ -754,11 +754,39 @@ out:
     return ret;
 }
 
-#define KRK_RCV_BUF_LEN 10
+static void krk_config_process_one_monitor(struct krk_connection *conn, struct krk_monitor *monitor)
+{
+    int buf_size = 0;
+    struct krk_event *wev = conn->wev;
+    struct krk_monitor_info *m_info;
+    void *buf = wev->buf->pos;
+
+    m_info = buf;
+    krk_get_monitor_info(m_info, monitor);
+    buf_size += sizeof(struct krk_monitor_info);
+    buf += buf_size;
+    buf_size += krk_monitor_get_all_node_info(monitor, buf); 
+    wev->buf->last += buf_size;
+    krk_event_set_write(conn->sock, wev);
+    krk_event_add(wev);
+}
+
+static void krk_config_process_all_monitor(struct krk_connection *conn)
+{
+    int buf_size = 0;
+    struct krk_event *wev = conn->wev;
+    void *buf = wev->buf->pos;
+
+    buf_size = krk_get_all_monitor_name(buf);
+    wev->buf->last += buf_size;
+    krk_event_set_write(conn->sock, wev);
+    krk_event_add(wev);
+}
 
 void krk_config_read(int sock, short type, void *arg)
 {
 	int n, ret;
+    struct krk_monitor *monitor;
 	struct krk_event *rev;
 	struct krk_connection *conn;
     struct krk_config_ret *conf_ret = NULL;
@@ -784,12 +812,19 @@ void krk_config_read(int sock, short type, void *arg)
     switch (conf_ret->retval) {
         case KRK_CONF_RET_RELOAD:
             if (krk_config_load(krk_config_file)) {
-                printf("reload configuration failed!");
+                printf("reload configuration failed!\n");
             }
             break;
         case KRK_CONF_RET_SHOW_ONE_MONITOR:
+            monitor = krk_monitor_find(conf_ret->monitor);
+            if (monitor == NULL) {
+                printf("find monitor %s failed!\n", conf_ret->monitor);
+                break;
+            }
+            krk_config_process_one_monitor(conn, monitor);
             break;
         case KRK_CONF_RET_SHOW_ALL_MONITOR:
+            krk_config_process_all_monitor(conn);
             break;
         default:
             break;
@@ -801,4 +836,30 @@ void krk_config_read(int sock, short type, void *arg)
 
 void krk_config_write(int sock, short type, void *arg)
 {
+	int n;
+	struct krk_event *wev;
+	struct krk_connection *conn;
+
+	wev = arg;
+	conn = wev->conn;
+	
+	n = send(sock, wev->buf->pos, wev->buf->last - wev->buf->pos, 0);
+	if (n < 0) {
+		fprintf(stderr, "write config retval error\n");
+		krk_connection_destroy(conn);
+		return;
+	}
+
+	if (n == (wev->buf->last - wev->buf->pos)) {
+		wev->buf->pos = wev->buf->last = wev->buf->head;
+		return;
+	}
+
+	/* write busy, rearm */
+	if (n < (wev->buf->last - wev->buf->pos)) {
+		wev->buf->pos += n;
+	}
+
+	krk_event_set_write(sock, wev);
+	krk_event_add(wev);
 }

@@ -33,12 +33,14 @@ struct krk_buffer* krk_buffer_create(size_t size)
         return NULL;
     }
 
+    memset(buf, 0, sizeof(*buf));
     buf->head = malloc(size);
     if (!buf->head) {
         free(buf);
         return NULL;
     }
 
+    memset(buf->head, 0, size);
     buf->end = buf->head + size;
     buf->pos = buf->last = buf->head;
 

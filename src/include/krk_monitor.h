@@ -30,6 +30,7 @@
 #define KRK_MONITOR_FLAG_ENABLED 0x1
 
 #define KRK_MONITOR_MAX_NR 64
+#define KRK_NODE_MAX_NUM 10000
 
 struct krk_monitor {
     char name[KRK_NAME_LEN];
@@ -142,8 +143,13 @@ extern int krk_monitor_set_node_status(struct krk_monitor *monitor,
         unsigned char id, int status);
 extern void krk_monitor_show(void);
 extern int krk_monitor_get_all_monitors(struct krk_monitor *monitors);
+extern int krk_get_all_monitor_name(char *buf);
 extern int krk_monitor_destroy_all_nodes(struct krk_monitor *monitor);
 
+extern void krk_get_monitor_info(struct krk_monitor_info *info, struct krk_monitor *monitor);
+extern void krk_show_monitor_info(struct krk_monitor_info *info);
+extern void krk_show_node_info(struct krk_node_info *info);
+extern size_t krk_info_buffer_size(void);
 extern int krk_monitor_init_node_ssl(struct krk_node *node);
 
 extern void krk_monitor_node_failure_inc(struct krk_monitor *, struct krk_node *);
