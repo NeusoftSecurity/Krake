@@ -256,6 +256,7 @@ static inline void krk_show_monitor_config(char *name)
     struct krk_node_info *n_info = NULL;
     int sockfd = 0;
     int buf_size = 0;
+    int buf_len = 0;
     int snd_len = 0;
     int rcv_len = 0;
     int ret = 0;
@@ -288,7 +289,8 @@ static inline void krk_show_monitor_config(char *name)
     }
 
     while (1) {
-        rcv_len = recv(sockfd, buf, buf_size, 0);
+        rcv_buf = buf + rcv_len;
+        rcv_len = recv(sockfd, rcv_buf, buf_size, 0);
         if (rcv_len < 0) {
             perror("recv");
             goto out;
@@ -297,23 +299,26 @@ static inline void krk_show_monitor_config(char *name)
         if (rcv_len == 0) {
             break;
         }
-        rcv_buf = buf + rcv_len;
         buf_size -= rcv_len;
+        buf_len += rcv_len;
     }
 
     if (!strcmp(name, "all")) {
-        while (buf_size > 0) {
-            strncpy(m_name, buf, KRK_NAME_LEN);
+        rcv_buf = buf;
+        while (buf_len > 0) {
+            strncpy(m_name, rcv_buf, KRK_NAME_LEN);
             printf("Monitor: %s\n", m_name);
-            buf_size -= KRK_NAME_LEN;
+            buf_len -= KRK_NAME_LEN;
+            rcv_buf += KRK_NAME_LEN;
         }
     } else {
         krk_show_monitor_info(buf);
         n_info = buf + sizeof(struct krk_monitor_info);
+        buf_len -= sizeof(struct krk_monitor_info);
         printf("node informations:\n");
-        while (buf_size > 0) {
+        while (buf_len > 0) {
             krk_show_node_info(n_info);
-            buf_size -= sizeof(struct krk_node_info);
+            buf_len -= sizeof(struct krk_node_info);
             n_info++;
         }
     }

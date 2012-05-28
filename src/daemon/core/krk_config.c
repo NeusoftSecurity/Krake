@@ -814,7 +814,8 @@ void krk_config_read(int sock, short type, void *arg)
             if (krk_config_load(krk_config_file)) {
                 printf("reload configuration failed!\n");
             }
-            break;
+            close(sock);
+            return;
         case KRK_CONF_RET_SHOW_ONE_MONITOR:
             monitor = krk_monitor_find(conf_ret->monitor);
             if (monitor == NULL) {
@@ -852,6 +853,7 @@ void krk_config_write(int sock, short type, void *arg)
 
 	if (n == (wev->buf->last - wev->buf->pos)) {
 		wev->buf->pos = wev->buf->last = wev->buf->head;
+		krk_connection_destroy(conn);
 		return;
 	}
 
