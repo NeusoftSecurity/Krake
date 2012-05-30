@@ -291,7 +291,7 @@ static inline void krk_show_monitor_config(char *name)
     }
 
     while (1) {
-        rcv_buf = buf + rcv_len;
+        rcv_buf = buf + buf_len;
 again:
         rcv_len = recv(sockfd, rcv_buf, buf_size, 0);
         if (rcv_len < 0 && errno == EAGAIN) {
@@ -330,8 +330,10 @@ again:
             goto out;
         }
 
+        int i = 0;
         fprintf(stderr, "node informations:\n");
         while (buf_len > 0) {
+            i++;
             fprintf(stderr, "====================\n");
             krk_show_node_info(n_info);
             fprintf(stderr, "====================\n");

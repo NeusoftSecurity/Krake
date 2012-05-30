@@ -404,6 +404,7 @@ struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port)
     }
 
     if (krk_nr_nodes > KRK_NODE_MAX_NUM) {
+        printf("node number is bigger than the limit %d\n",KRK_NODE_MAX_NUM);
         return NULL;
     }
 
@@ -840,7 +841,6 @@ int krk_monitor_get_all_node_info(struct krk_monitor *monitor,
 {
     struct krk_node *node;
     struct list_head *p, *n;
-    int buf_size = 0;
     int i = 0;
 
     if (info == NULL || monitor == NULL) {
@@ -854,9 +854,7 @@ int krk_monitor_get_all_node_info(struct krk_monitor *monitor,
         i++;
     }
 
-    buf_size += i * sizeof(struct krk_node_info);
-
-    return buf_size;
+    return (i * sizeof(struct krk_node_info));
 }
 
 

@@ -651,17 +651,20 @@ static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor,
         if (node == NULL) {
             node = krk_monitor_create_node(conf_node->addr, conf_node->port);
             if (node == NULL) {
+                printf("create node failed!\n");
                 ret = KRK_ERROR;
                 goto out;
             }
 
             ret = krk_monitor_add_node(monitor, node);
             if (ret == KRK_ERROR) {
+                printf("add node failed!\n");
                 goto out;
             }
         } else {
             ret = krk_config_update_node(conf_node, node);
             if (ret == KRK_ERROR) {
+                printf("update node failed!\n");
                 goto out;
             }
         }
