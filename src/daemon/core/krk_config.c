@@ -814,12 +814,13 @@ void krk_config_read(int sock, short type, void *arg)
             if (krk_config_load(krk_config_file)) {
                 printf("reload configuration failed!\n");
             }
-            close(sock);
-            return;
+            krk_connection_destroy(conn);
+            break;
         case KRK_CONF_RET_SHOW_ONE_MONITOR:
             monitor = krk_monitor_find(conf_ret->monitor);
             if (monitor == NULL) {
                 printf("find monitor %s failed!\n", conf_ret->monitor);
+                krk_connection_destroy(conn);
                 break;
             }
             krk_config_process_one_monitor(conn, monitor);
@@ -830,9 +831,6 @@ void krk_config_read(int sock, short type, void *arg)
         default:
             break;
     }
-
-	krk_event_set_read(sock, rev);
-	krk_event_add(rev);
 }
 
 void krk_config_write(int sock, short type, void *arg)

@@ -305,6 +305,10 @@ static inline void krk_show_monitor_config(char *name)
         buf_len += rcv_len;
     }
 
+    if (buf_len == 0) {
+        goto out;
+    }
+
     if (!strcmp(name, "all")) {
         rcv_buf = buf;
         while (buf_len > 0) {
@@ -317,6 +321,10 @@ static inline void krk_show_monitor_config(char *name)
         krk_show_monitor_info(buf);
         n_info = buf + sizeof(struct krk_monitor_info);
         buf_len -= sizeof(struct krk_monitor_info);
+        if (buf_len == 0) {
+            goto out;
+        }
+
         fprintf(stderr, "node informations:\n");
         while (buf_len > 0) {
             fprintf(stderr, "====================\n");
@@ -359,6 +367,10 @@ int main(int argc, char* argv[])
     int opt, quit = 0;
 
     strncpy(krk_config_file, KRK_DEFAULT_CONF, KRK_CONFIG_FILE_NAME_LEN);
+
+    if (argc == 1) {
+        goto start;
+    }
 
     while (1) {
         opt = getopt_long(argc, argv, optstring, optlong, NULL);
@@ -418,6 +430,7 @@ int main(int argc, char* argv[])
         return 0;
     }
 
+start:
     /* daemonize myself */
     if (krk_daemonize()) {
         fprintf(stderr, "Fatal: failed to become a daemon\n");
