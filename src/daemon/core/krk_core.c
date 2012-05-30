@@ -292,7 +292,12 @@ static inline void krk_show_monitor_config(char *name)
 
     while (1) {
         rcv_buf = buf + rcv_len;
+again:
         rcv_len = recv(sockfd, rcv_buf, buf_size, 0);
+        if (rcv_len < 0 && errno == EAGAIN) {
+            goto again;
+        }
+
         if (rcv_len < 0) {
             perror("recv");
             goto out;
@@ -374,7 +379,6 @@ int main(int argc, char* argv[])
 
     while (1) {
         opt = getopt_long(argc, argv, optstring, optlong, NULL);
-
         if (opt == -1) {
             quit = 1;
             break;
@@ -394,7 +398,7 @@ int main(int argc, char* argv[])
                     quit = 1;
                 }
                 strcpy(krk_config_file, optarg);
-                break;
+                goto start;
             case 'r':
                 krk_reload_config();
                 return 0;
