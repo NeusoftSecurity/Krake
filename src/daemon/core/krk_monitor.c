@@ -163,24 +163,24 @@ struct krk_monitor* krk_monitor_create(const char *name)
     int ret = 0;
 
     if (!name) {
-        printf("name = NULL!\n");
+        fprintf(stderr,"name = NULL!\n");
         return NULL;
     }
 
     monitor = krk_monitor_find(name);
     if (monitor != NULL) {
-        printf("%s is existing!\n",name);
+        fprintf(stderr,"%s is existing!\n",name);
         return NULL;
     }
 
     if (krk_nr_monitors == krk_max_monitors) {
-        printf("monitor number (%d) is full(%d)!\n",krk_nr_monitors, krk_max_monitors);
+        fprintf(stderr,"monitor number (%d) is full(%d)!\n",krk_nr_monitors, krk_max_monitors);
         return NULL;
     }
 
     monitor = malloc(sizeof(struct krk_monitor));
     if (!monitor) {
-        printf("alloc monitor failed!\n");
+        fprintf(stderr,"alloc monitor failed!\n");
         return NULL;
     }
 
@@ -190,7 +190,7 @@ struct krk_monitor* krk_monitor_create(const char *name)
     monitor->tmout_ev = krk_event_create(0);
     if (monitor->tmout_ev == NULL) {
         free(monitor);
-        printf("create event failed!\n");
+        fprintf(stderr,"create event failed!\n");
         return NULL;
     }
 
@@ -635,21 +635,21 @@ int krk_monitor_get_nodes_by_addr(const char *addr,
 
 static void krk_monitor_show_checker(struct krk_checker *checker)
 {
-    printf("checker name = %s\n",checker->name);
+    fprintf(stderr,"checker name = %s\n",checker->name);
 }
 
 static void krk_monitor_show_node(struct krk_node *node)
 {
-    printf("------------node------------\n");
-    printf("node addr = %s\n", node->addr);
-    printf("node port = %u\n", node->port);
-    printf("node nr_fail = %u\n", node->nr_fail);
-    printf("node nr_success = %u\n", node->nr_success);
-    printf("node id = %d\n", node->id);
-    printf("node ipv6 = %d\n", node->ipv6);
-    printf("node down = %d\n", node->down);
-    printf("node ready = %d\n", node->ready);
-    printf("------------node end------------\n");
+    fprintf(stderr,"------------node------------\n");
+    fprintf(stderr,"node addr = %s\n", node->addr);
+    fprintf(stderr,"node port = %u\n", node->port);
+    fprintf(stderr,"node nr_fail = %u\n", node->nr_fail);
+    fprintf(stderr,"node nr_success = %u\n", node->nr_success);
+    fprintf(stderr,"node id = %d\n", node->id);
+    fprintf(stderr,"node ipv6 = %d\n", node->ipv6);
+    fprintf(stderr,"node down = %d\n", node->down);
+    fprintf(stderr,"node ready = %d\n", node->ready);
+    fprintf(stderr,"------------node end------------\n");
 }
 
 static void krk_monitor_show_one(struct krk_monitor *monitor)
@@ -657,26 +657,26 @@ static void krk_monitor_show_one(struct krk_monitor *monitor)
     struct list_head *k, *m;
     struct krk_node *node;
 
-    printf("============monitor============\n");
-    printf("monitor name = %s\n",monitor->name);
-    printf("id = %d\n",monitor->id);
-    printf("interval = %lu\n",monitor->interval);
-    printf("timeout = %lu\n",monitor->timeout);
-    printf("failure threshold = %lu\n",monitor->failure_threshold);
-    printf("success threshold = %lu\n",monitor->success_threshold);
+    fprintf(stderr,"============monitor============\n");
+    fprintf(stderr,"monitor name = %s\n",monitor->name);
+    fprintf(stderr,"id = %d\n",monitor->id);
+    fprintf(stderr,"interval = %lu\n",monitor->interval);
+    fprintf(stderr,"timeout = %lu\n",monitor->timeout);
+    fprintf(stderr,"failure threshold = %lu\n",monitor->failure_threshold);
+    fprintf(stderr,"success threshold = %lu\n",monitor->success_threshold);
 
     krk_monitor_show_checker(monitor->checker);
 
-    printf("notify_script= %s\n",monitor->notify_script);
-    printf("notify_script_name= %s\n",monitor->notify_script_name);
+    fprintf(stderr,"notify_script= %s\n",monitor->notify_script);
+    fprintf(stderr,"notify_script_name= %s\n",monitor->notify_script_name);
 
-    printf("eanble= %d\n",monitor->enabled);
+    fprintf(stderr,"eanble= %d\n",monitor->enabled);
 
     list_for_each_safe(k, m, &monitor->node_list) {
         node = list_entry(k, struct krk_node, list);
         krk_monitor_show_node(node);
     }
-    printf("============monitor end============\n");
+    fprintf(stderr,"============monitor end============\n");
 }
 
 void krk_monitor_show(void)
@@ -774,13 +774,13 @@ void krk_get_monitor_info(struct krk_monitor_info *info,
 
 void krk_show_monitor_info(struct krk_monitor_info *info)
 {
-    printf("monitor name = %s\n",info->name);
-    printf("checker = %s\n",info->checker);
-    printf("node number = %d\n",info->nr_nodes);
+    fprintf(stderr,"monitor name = %s\n",info->name);
+    fprintf(stderr,"checker = %s\n",info->checker);
+    fprintf(stderr,"node number = %d\n",info->nr_nodes);
     if (info->enabled) {
-        printf("monitor enabled\n");
+        fprintf(stderr,"monitor enabled\n");
     } else {
-        printf("monitor disabled\n");
+        fprintf(stderr,"monitor disabled\n");
     }
 }
 
@@ -798,13 +798,13 @@ static void krk_get_node_info(struct krk_node_info *info,
 
 void krk_show_node_info(struct krk_node_info *info)
 {
-    printf("addr = %s\n",info->addr);
-    printf("port = %d\n",info->port);
-    printf("nr_fail = %d\n",info->nr_fail);
-    printf("nr_success = %d\n",info->nr_success);
-    printf("ipv6 = %d\n",info->ipv6);
-    printf("down = %d\n",info->down);
-    printf("ready = %d\n",info->ready);
+    fprintf(stderr,"addr = %s\n",info->addr);
+    fprintf(stderr,"port = %d\n",info->port);
+    fprintf(stderr,"nr_fail = %d\n",info->nr_fail);
+    fprintf(stderr,"nr_success = %d\n",info->nr_success);
+    fprintf(stderr,"ipv6 = %d\n",info->ipv6);
+    fprintf(stderr,"down = %d\n",info->down);
+    fprintf(stderr,"ready = %d\n",info->ready);
 }
 
 size_t krk_info_buffer_size(void)

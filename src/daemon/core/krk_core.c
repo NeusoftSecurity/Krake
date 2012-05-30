@@ -27,10 +27,11 @@ static const struct option optlong[] = {
     {"config", 0, NULL, 'c'},
     {"reload", 0, NULL, 'r'},
     {"show", 0, NULL, 's'},
+    {"quit", 0, NULL, 'q'},
     {NULL, 0, NULL, 0}
 };
 
-static const char* optstring = "hvrms:c:";
+static const char* optstring = "hvrmqs:c:";
 
 static void krk_usage(void)
 {
@@ -38,6 +39,7 @@ static void krk_usage(void)
             "\t--config/-c		Assign the configruation file\n"
             "\t--reload/-r		Reload the configruation file\n"
             "\t--show/-s		Show the configruation, -s all for all monitor, -s monitor_name for one monitor\n"
+            "\t--quit/-q		Shutdown the krake\n"
             "\t--version/-v		Show Krake version\n"
             "\t--help/-h		Show this help\n");
 }
@@ -307,7 +309,7 @@ static inline void krk_show_monitor_config(char *name)
         rcv_buf = buf;
         while (buf_len > 0) {
             strncpy(m_name, rcv_buf, KRK_NAME_LEN);
-            printf("Monitor: %s\n", m_name);
+            fprintf(stderr, "Monitor: %s\n", m_name);
             buf_len -= KRK_NAME_LEN;
             rcv_buf += KRK_NAME_LEN;
         }
@@ -315,9 +317,11 @@ static inline void krk_show_monitor_config(char *name)
         krk_show_monitor_info(buf);
         n_info = buf + sizeof(struct krk_monitor_info);
         buf_len -= sizeof(struct krk_monitor_info);
-        printf("node informations:\n");
+        fprintf(stderr, "node informations:\n");
         while (buf_len > 0) {
+            fprintf(stderr, "====================\n");
             krk_show_node_info(n_info);
+            fprintf(stderr, "====================\n");
             buf_len -= sizeof(struct krk_node_info);
             n_info++;
         }
@@ -359,8 +363,10 @@ int main(int argc, char* argv[])
     while (1) {
         opt = getopt_long(argc, argv, optstring, optlong, NULL);
 
-        if (opt == -1)
+        if (opt == -1) {
+            quit = 1;
             break;
+        }
 
         switch (opt) {
             case 'h':
@@ -392,7 +398,16 @@ int main(int argc, char* argv[])
                 }
                 kill(pid, SIGUSR2);
                 return 0;
+            case 'q':
+                pid = krk_get_daemon_pid();
+                if (pid < 0) {
+                    printf("Shutdown krake failed!\n");
+                    return -1;
+                }
+                kill(pid, SIGTERM);
+                return 0;
             
+
             default:
                 /* never could be here */
                 break;
