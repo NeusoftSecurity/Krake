@@ -11,6 +11,7 @@
  */
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <ctype.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
@@ -26,14 +27,15 @@
 #include <checkers/krk_checker.h>
 
 struct krk_config_param {
-    xmlChar *key;
-    int cmd_label;
+    xmlChar     *key;
+    unsigned int cmd_label;
 };
 
 struct krk_config_parser {
     struct krk_config_param param;
     int (*parser)(struct krk_config_param *param, void *arg,
                 xmlDocPtr doc, xmlNodePtr cur);
+    bool                    essential;
 };
 
 static int krk_config_parse_first(struct krk_config_param *param, 
@@ -78,6 +80,7 @@ static int krk_config_parse_xml_node(struct krk_config_parser *conf_parser,
                     int parser_num, void *arg, xmlDocPtr doc, xmlNodePtr cur) 
 {
     struct krk_config_parser *c_parser = NULL;
+    unsigned int label = 0;
     int p = 0;
     int valid = 0;
     int ret = 0;
@@ -97,9 +100,10 @@ static int krk_config_parse_xml_node(struct krk_config_parser *conf_parser,
 		    if ((!xmlStrcmp(cur->name, c_parser->param.key))) {
                 ret = c_parser->parser(&c_parser->param, arg, doc, cur);
                 if (ret < 0) {
-                    printf("paese %s failed!\n",c_parser->param.key);
+                    printf("parse %s failed!\n",c_parser->param.key);
                     return KRK_ERROR;
                 }
+                label |= c_parser->param.cmd_label;
                 valid = 1;
                 break;
             }
@@ -115,6 +119,16 @@ next_cur:
         cur = cur->next;
     }
 
+    c_parser = conf_parser;
+    for (p = 0; p < parser_num; p++) {
+        if (c_parser->essential) {
+            if (!(label & c_parser->param.cmd_label)) {
+                printf("%s have not been set!\n",c_parser->param.key,label);
+                return KRK_ERROR;
+            }
+        }
+        c_parser++;
+    }
 
     return KRK_OK;
 }
@@ -161,8 +175,8 @@ static int krk_config_node_port(struct krk_config_param *param, void *arg,
 }
 
 static struct krk_config_parser krk_node_parser[] = {
-    {{"host", KRK_CONF_MONITOR_NODE_HOST}, krk_config_node_host},
-    {{"port", KRK_CONF_MONITOR_NODE_PORT}, krk_config_node_port},
+    {{"host", KRK_CONF_MONITOR_NODE_HOST}, krk_config_node_host, 1},
+    {{"port", KRK_CONF_MONITOR_NODE_PORT}, krk_config_node_port, 1},
 };
 
 #define krk_config_node_parser_num \
@@ -207,8 +221,8 @@ static int krk_config_log_level(struct krk_config_param *param, void *arg,
 }
 
 static struct krk_config_parser krk_log_parser[] = {
-    {{"logtype", KRK_CONF_MONITOR_LOGTYPE}, krk_config_log_type},
-    {{"loglevel", KRK_CONF_MONITOR_LOGLEVEL}, krk_config_log_level},
+    {{"logtype", KRK_CONF_MONITOR_LOGTYPE}, krk_config_log_type, 0},
+    {{"loglevel", KRK_CONF_MONITOR_LOGLEVEL}, krk_config_log_level, 0},
 };
 
 #define krk_config_log_parser_num \
@@ -448,16 +462,16 @@ static int krk_config_monitor_node(struct krk_config_param *param, void *arg,
 }
 
 static struct krk_config_parser krk_monitor_parser[] = {
-    {{"name", KRK_CONF_MONITOR_NAME}, krk_config_monitor_name},
-    {{"status", KRK_CONF_MONITOR_STATUS}, krk_config_monitor_status},
-    {{"checker", KRK_CONF_MONITOR_CHECKER}, krk_config_monitor_checker},
-    {{"checker-param", KRK_CONF_MONITOR_CHECKER_PARAM}, krk_config_monitor_checker_param},
-    {{"interval", KRK_CONF_MONITOR_INTERVAL}, krk_config_monitor_interval},
-    {{"timeout", KRK_CONF_MONITOR_TIMEOUT}, krk_config_monitor_timeout},
-    {{"failure_threshold", KRK_CONF_MONITOR_F_THRESHOLD}, krk_config_monitor_failure_threshold},
-    {{"success_threshold", KRK_CONF_MONITOR_S_THRESHOLD}, krk_config_monitor_success_threshold},
-    {{"script", KRK_CONF_MONITOR_SCRIPT}, krk_config_monitor_script},
-    {{"node", 0}, krk_config_monitor_node},
+    {{"name", KRK_CONF_MONITOR_NAME}, krk_config_monitor_name, 1},
+    {{"status", KRK_CONF_MONITOR_STATUS}, krk_config_monitor_status, 1},
+    {{"checker", KRK_CONF_MONITOR_CHECKER}, krk_config_monitor_checker, 1},
+    {{"checker-param", KRK_CONF_MONITOR_CHECKER_PARAM}, krk_config_monitor_checker_param, 0},
+    {{"interval", KRK_CONF_MONITOR_INTERVAL}, krk_config_monitor_interval, 1},
+    {{"timeout", KRK_CONF_MONITOR_TIMEOUT}, krk_config_monitor_timeout, 1},
+    {{"failure_threshold", KRK_CONF_MONITOR_F_THRESHOLD}, krk_config_monitor_failure_threshold, 1},
+    {{"success_threshold", KRK_CONF_MONITOR_S_THRESHOLD}, krk_config_monitor_success_threshold, 1},
+    {{"script", KRK_CONF_MONITOR_SCRIPT}, krk_config_monitor_script, 0},
+    {{"node", 0}, krk_config_monitor_node, 0},
 };
 
 #define krk_config_monitor_parser_num \
@@ -516,8 +530,8 @@ static void krk_config_free(struct krk_config *conf)
 }
 
 static struct krk_config_parser krk_parser[] = {
-    {{"monitor", 0}, krk_config_monitor_parse},
-    {{"log", KRK_CONF_MONITOR_SCRIPT}, krk_config_log_parse},
+    {{"monitor", 0}, krk_config_monitor_parse, 0},
+    {{"log", KRK_CONF_MONITOR_SCRIPT}, krk_config_log_parse, 0},
 };
 
 #define krk_config_parser_num \
