@@ -375,8 +375,7 @@ static int krk_config_monitor_timeout(struct krk_config_param *param, void *arg,
     }
 
     monitor->timeout = atol(config_value);
-    if (((long)monitor->timeout < 0)
-            || (monitor->interval <= monitor->timeout)) {
+    if ((long)monitor->timeout < 0) {
         return KRK_ERROR;
     }
 
@@ -493,8 +492,19 @@ static int krk_config_monitor_parse(struct krk_config_param *param, void *arg,
     monitor->next = conf->monitor;
     conf->monitor = monitor;
 
-    return krk_config_parse_xml_node(krk_monitor_parser, 
+    ret = krk_config_parse_xml_node(krk_monitor_parser, 
                     krk_config_monitor_parser_num, monitor, doc, cur);
+    if (ret != KRK_OK) {
+        return KRK_ERROR;
+    }
+
+    if (monitor->interval <= monitor->timeout) {
+        printf("Error! interval(%d) is not bigger than timeout(%d)!\n",
+                monitor->interval, monitor->timeout);
+        return KRK_ERROR;
+    }
+
+    return KRK_OK;
 }
 
 static void krk_config_monitor_free(struct krk_config_monitor *monitor)
