@@ -155,7 +155,7 @@ static inline pid_t krk_get_daemon_pid(void)
  */
 static inline int __krk_smooth_quit(void)
 {
-	krk_local_socket_exit();
+    krk_local_socket_exit();
 
     krk_remove_pid_file();
 
@@ -478,21 +478,21 @@ start:
 
     if (krk_local_socket_init()) {
         krk_log(KRK_LOG_ALERT, "Fatal: init local socket failed\n");
-	    krk_local_socket_exit();
+        krk_local_socket_exit();
         krk_remove_pid_file();
         return 1;
     }
 
     if (krk_monitor_init()) {
         krk_log(KRK_LOG_ALERT, "Fatal: init monitor failed\n");
-	    krk_local_socket_exit();
+        krk_local_socket_exit();
         krk_remove_pid_file();
         return 1;
     }
 
     if (krk_config_load(krk_config_file)) {
         krk_log(KRK_LOG_ALERT, "Fatal: failed to load configuration file!\n");
-	    krk_local_socket_exit();
+        krk_local_socket_exit();
         krk_remove_pid_file();
         return 1;
     }
