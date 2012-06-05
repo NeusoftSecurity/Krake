@@ -1,3 +1,15 @@
+Changes with krake 0.2.0                                        5 Jun 2012
+	*) Feature: add https support in http checker
+	*) Feature: change configuration method to a configuration file and
+	deprecate the old command line tool
+	*) Feature: support BSD systems
+	*) Feature: add success threshold
+	*) Change: use the libevent2 and don't support the old libevent any
+	more
+	*) Bugfix: fix many bugs since v0.11.2 including the buffer overflow and
+	memory leak problems
+
+
 Changes with krake 0.11.2                                       29 Aug 2011
 
 	*) Feature: add http checker
