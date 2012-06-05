@@ -17,3 +17,8 @@
 *) support cloud checker. this means krake could use the cloud platform API to check the health status of the detected node
 *) support cloud actions. auto-scaling feature.
 *) detail README file in Chinese, English and German.
+*) need a automated release script:
+        *) use "git archive" to make a tarball with a specific tag
+        *) extrace the tarball and generate the configure script
+        *) "configure" & "make dist" to make a final tarball
+        *) release the final tarball to the public
