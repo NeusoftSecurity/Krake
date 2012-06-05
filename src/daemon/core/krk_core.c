@@ -38,8 +38,8 @@ static void krk_usage(void)
     printf("Usage: krake [option]\n"
             "\t--config/-c		Assign the configruation file\n"
             "\t--reload/-r		Reload the configruation file\n"
-            "\t--show/-s		Show the configruation, -s all for all monitor, -s monitor_name for one monitor\n"
-            "\t--quit/-q		Shutdown the krake\n"
+            "\t--show/-s		Show health status, -s all for all monitor, -s monitor_name for one monitor\n"
+            "\t--quit/-q		Shutdown Krake\n"
             "\t--version/-v		Show Krake version\n"
             "\t--help/-h		Show this help\n");
 }

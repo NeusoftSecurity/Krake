@@ -499,7 +499,7 @@ static int krk_config_monitor_parse(struct krk_config_param *param, void *arg,
     }
 
     if (monitor->interval <= monitor->timeout) {
-        printf("Error! interval(%d) is not bigger than timeout(%d)!\n",
+        printf("Error! interval(%lu) is not bigger than timeout(%lu)!\n",
                 monitor->interval, monitor->timeout);
         return KRK_ERROR;
     }
