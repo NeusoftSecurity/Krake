@@ -7,13 +7,13 @@
 *) configuration file not automatically overwritten
 
 (IN PROGRESS)
+*) health status(red, yellow, green), depending on the response time of the detected node
 
 
 (TODO)
 *) support ipv6
 *) a more reasonable notification mechanism to other components
 *) maybe other protocols
-*) health status(red, yellow, green), depending on the response time of the detected node
 *) support cloud checker. this means krake could use the cloud platform API to check the health status of the detected node
 *) support cloud actions. auto-scaling feature.
 *) detail README file in Chinese, English and German.
