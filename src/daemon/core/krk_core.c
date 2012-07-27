@@ -60,20 +60,47 @@ static void krk_version(void)
 static inline int krk_daemonize(void)
 {
     pid_t pid;
+    int fd;
 
-    if ((pid = fork()) < 0)
+    if ((pid = fork()) < 0) {
         return -1;
-    else if (pid != 0)
+    } else if (pid != 0) {
         exit(0);
+    }
 
-    setsid();
-
-    if (chdir("/"))
+    if (setsid() < 0) {
+        krk_log(KRK_LOG_ALERT, "Setsid failed!\n");
         return -1;
+    }
+
+    if (chdir("/")) {
+        krk_log(KRK_LOG_ALERT, "Change dir failed!\n");
+        return -1;
+    }
 
     umask(0);
 
-    //fclose(stderr);
+    fd = open("/dev/null", O_RDWR);
+    if (fd < 0) {
+        krk_log(KRK_LOG_ALERT, "Open /dev/null failed!\n");
+        return -1;
+    }
+
+    if (dup2(fd, STDIN_FILENO) == -1) {
+        krk_log(KRK_LOG_ALERT, "Dup2 STDIN_FILENO failed!\n");
+        return -1;
+    }
+
+    if (dup2(fd, STDOUT_FILENO) == -1) {
+        krk_log(KRK_LOG_ALERT, "Dup2 STDOUT_FILENO failed!\n");
+        return -1;
+    }
+
+    if (fd > STDERR_FILENO) {
+        if (close(fd) == -1) {
+            return -1;
+        }
+    }
 
     return 0;
 }
