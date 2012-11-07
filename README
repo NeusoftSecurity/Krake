@@ -40,7 +40,7 @@ Example:
                                             when enable, also starts the monitor's timer;
                                             when disable, also stops the monitor's timer-->
         <checker>http</checker>             <!--specify a checker using by a monitor-->
-        <checker-param>b</checker-param>    <!--checker's parameters-->
+        <checker_param>b</checker_param>    <!--checker's parameters-->
         <interval>5</interval>              <!--interval of monitor's timer in seconds-->
         <timeout>3</timeout>                <!--time out value of checked host in seconds-->
         <failure_threshold>3</failure_threshold>            <!--how many times of failures happen, marking host as down-->
