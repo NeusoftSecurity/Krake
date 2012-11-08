@@ -163,24 +163,24 @@ struct krk_monitor* krk_monitor_create(const char *name)
     int ret = 0;
 
     if (!name) {
-        krk_log(KRK_LOG_ALERT,stderr,"name = NULL!\n");
+        krk_log(KRK_LOG_ALERT,"name = NULL!\n");
         return NULL;
     }
 
     monitor = krk_monitor_find(name);
     if (monitor != NULL) {
-        krk_log(KRK_LOG_ALERT,stderr,"%s is existing!\n",name);
+        krk_log(KRK_LOG_ALERT,"%s is existing!\n",name);
         return NULL;
     }
 
     if (krk_nr_monitors == krk_max_monitors) {
-        krk_log(KRK_LOG_ALERT,stderr,"monitor number (%d) is full(%d)!\n",krk_nr_monitors, krk_max_monitors);
+        krk_log(KRK_LOG_ALERT,"monitor number (%d) is full(%d)!\n",krk_nr_monitors, krk_max_monitors);
         return NULL;
     }
 
     monitor = malloc(sizeof(struct krk_monitor));
     if (!monitor) {
-        krk_log(KRK_LOG_ALERT,stderr,"alloc monitor failed!\n");
+        krk_log(KRK_LOG_ALERT,"alloc monitor failed!\n");
         return NULL;
     }
 
@@ -190,7 +190,7 @@ struct krk_monitor* krk_monitor_create(const char *name)
     monitor->tmout_ev = krk_event_create(0);
     if (monitor->tmout_ev == NULL) {
         free(monitor);
-        krk_log(KRK_LOG_ALERT,stderr,"create event failed!\n");
+        krk_log(KRK_LOG_ALERT,"create event failed!\n");
         return NULL;
     }
 

@@ -61,7 +61,7 @@ if test "$with_libxml2_includes" != "no"; then
 	CPPFLAGS="${CPPFLAGS} -I${with_libxml2_includes}"
 fi
 
-LIBS="${LIBS} -L/usr/local/lib"
+LIBS="${LIBS} -L/usr/local/lib -L/usr/local/lib/event2"
 
 if test "$with_libevent_libraries" != "no"; then
 	LIBS="${LIBS} -L${with_libevent_libraries}"
