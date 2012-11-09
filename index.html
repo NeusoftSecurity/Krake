@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Krake by InfoHunter</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Krake</h1>
+        <h2>Krake provides health monitor functionality for servers. </h2>
+        <a href="https://github.com/InfoHunter/Krake" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>Krake</h1>
+
+<p>Krake provides health monitor functionality for servers. </p>
+
+<h2>Overview</h2>
+
+<p>Krake is a health monitor which can check the server's health status.</p>
+
+<p>Feature List:</p>
+
+<ul>
+<li>Support health monitoring in:
+
+<ul>
+<li>ICMP</li>
+<li>TCP</li>
+<li>HTTP/HTTPS</li>
+</ul>
+</li>
+<li>Support callback mechanism that can call user-specified scripts/commands to notify the health status</li>
+<li>Support writing logs into syslog or file</li>
+</ul><p>Krake runs as a daemon and can be configured by a xml styled configuration file.
+Krake can run in most Unix like environment, incl. Linux and xBSD.</p>
+
+<h2>Installation</h2>
+
+<p>Requires:</p>
+
+<ul>
+<li>libevent2</li>
+<li>libmnl</li>
+</ul><p>Read the INSTALL file in the source code tree.</p>
+
+<h2>General Usage</h2>
+
+<p>The krake daemon supports the following options:</p>
+
+<pre><code>    --config/-c             Assign the configruation file
+    --reload/-r             Reload the configruation file
+    --show/-s               Show health status, -s all for all monitor, -s monitor_name for one monitor
+    --quit/-q               Shutdown krake
+    --version/-v            Show Krake version
+    --help/-h               Show this help
+</code></pre>
+
+<h2>Configuration</h2>
+
+<p>Default configuration file: $prefix/etc/krake.conf, the $prefix refers to the parameter passed to configure script while 
+compile the source code.</p>
+
+<p>Example:</p>
+
+<pre><code>    &lt;?xml version="1.0"?&gt;
+    &lt;krk_config&gt;
+            &lt;monitor&gt;                               &lt;!--Keyword for krake configuration, monitor can more than one--&gt;
+                    &lt;name&gt;monitor1&lt;/name&gt;               &lt;!--name of a monitor--&gt;
+                    &lt;status&gt;enable&lt;/status&gt;             &lt;!--Only can be enable or disable; 
+                                                        when enable, also starts the monitor's timer;
+                                                        when disable, also stops the monitor's timer--&gt;
+                    &lt;checker&gt;http&lt;/checker&gt;             &lt;!--specify a checker using by a monitor--&gt;
+                    &lt;checker_param&gt;send-file:"~/request" 
+                            expected-file:"~/response"&lt;/checker_param&gt;    &lt;!--checker's parameters, see below--&gt;
+                    &lt;interval&gt;5&lt;/interval&gt;              &lt;!--interval of monitor's timer in seconds--&gt;
+                    &lt;timeout&gt;3&lt;/timeout&gt;                &lt;!--time out value of checked host in seconds--&gt;
+                    &lt;failure_threshold&gt;3&lt;/failure_threshold&gt;            &lt;!--how many times of failures happen, marking host as down--&gt;
+                    &lt;success_threshold&gt;3&lt;/success_threshold&gt;            &lt;!--how many times of successes happen, marking host as up--&gt;
+                    &lt;node&gt;
+                            &lt;host&gt;10.1.1.2&lt;/host&gt;               &lt;!--ip address of a checked host, either ipv4 address is valid--&gt;
+                            &lt;port&gt;8080&lt;/port&gt;                   &lt;!--port number of a checked host, range is 1 ~ 65535--&gt;
+                    &lt;/node&gt;
+                    &lt;node&gt;
+                            &lt;host&gt;10.1.1.3&lt;/host&gt;               &lt;!--ip address of a checked host, either ipv4 address is valid--&gt;
+                            &lt;port&gt;8080&lt;/port&gt;                   &lt;!--port number of a checked host, range is 1 ~ 65535--&gt;
+                    &lt;/node&gt;
+                    &lt;script&gt;~/notifier.sh&lt;/script&gt;              &lt;!--failure notification, if user specify this option,
+                                                          when a failure of a checked host is deteceted, krake will call this script--&gt;
+            &lt;/monitor&gt;
+            &lt;log&gt;                               &lt;!--set logging attributes--&gt;
+                    &lt;logtype&gt;syslog&lt;/logtype&gt;       &lt;!--set the type of logs that krake sends, value can be file, syslog--&gt;
+                    &lt;loglevel&gt;notice&lt;/loglevel&gt;          &lt;!--set the level of logs, under which the logs will not be sent out--&gt;
+            &lt;/log&gt;
+    &lt;/krk_config&gt;
+</code></pre>
+
+<p>If don't want to use this file, you can assign another xml file by krake command line</p>
+
+<p>After you make some modifications to the configuration file, you can use "krake -r" to force the daemon reload the 
+configuration file without stopping the current detection.</p>
+
+<h2>Configuration of the Checkers</h2>
+
+<p>At current stage, only http checker has the checker parameters.</p>
+
+<pre><code>http checker:
+
+    &lt;checker-param&gt;send-file:"/path/to/a/file" expected-file:"/path/to/a/file"&lt;/checker-param&gt;
+
+This let you to specify what to send and what to expected to receive when you use the http checker.
+You can write the http packet into a send file and tell Krake what to send.
+
+If these parameters are missing, then Krake will send a minimum http request packet as:
+    GET / HTTP/1.0
+    Host: test
+    Connection: Close
+
+and expect only the 200 status of the http response.
+http checker now only supports HTTP 1.0 protocol.
+</code></pre>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/InfoHunter/Krake/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/InfoHunter/Krake/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/InfoHunter/Krake"></a> is maintained by <a href="https://github.com/InfoHunter">InfoHunter</a>.</p>
+
+          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
