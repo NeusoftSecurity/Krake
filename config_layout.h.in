@@ -1,0 +1,11 @@
+/**
+ * @file  fp_config_layout.h
+ * @brief Faithpower Config Layout
+ */
+
+#ifndef __KRK_CONFIG_LAYOUT_H__
+#define __KRK_CONFIG_LAYOUT_H__
+
+#define KRK_DEFAULT_CONF  "@prefix@/etc/krake.conf"
+
+#endif /* __FP_CONFIG_LAYOUT_H__ */

@@ -1,0 +1,24 @@
+(DONE) 
+*) make the autoconf/automake toolchain more useful. now we plan to support xBSD and Linux
+*) change cli/daemon mode to configuration file
+*) support https checker
+*) support success threshold
+*) configuration file syntax check
+*) configuration file not automatically overwritten
+
+(IN PROGRESS)
+*) health status(red, yellow, green), depending on the response time of the detected node
+
+
+(TODO)
+*) support ipv6
+*) a more reasonable notification mechanism to other components
+*) maybe other protocols
+*) support cloud checker. this means krake could use the cloud platform API to check the health status of the detected node
+*) support cloud actions. auto-scaling feature.
+*) detail README file in Chinese, English and German.
+*) need a automated release script:
+        *) use "git archive" to make a tarball with a specific tag
+        *) extrace the tarball and generate the configure script
+        *) "configure" & "make dist" to make a final tarball
+        *) release the final tarball to the public

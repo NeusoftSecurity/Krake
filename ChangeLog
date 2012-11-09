@@ -1,0 +1,35 @@
+Changes with krake 0.2.0                                        5 Jun 2012
+	*) Feature: add https support in http checker
+	*) Feature: change configuration method to a configuration file and
+	deprecate the old command line tool
+	*) Feature: support BSD systems
+	*) Feature: add success threshold
+	*) Change: use the libevent2 and don't support the old libevent any
+	more
+	*) Bugfix: fix many bugs since v0.11.2 including the buffer overflow and
+	memory leak problems
+
+
+Changes with krake 0.11.2                                       29 Aug 2011
+
+	*) Feature: add http checker
+
+
+Changes with krake 0.11.1                                       3 Mar 2011
+
+	*) Feature: add port parameter when krake calls the notification script.
+	*) Bugfix: increase the failure counts of the node when call "sendto"
+	failed.
+
+
+Changes with krake 0.11                                         22 Feb 2011
+
+	*) Feature: icmp ping
+
+
+Changes with krake 0.10                                         15 Feb 2011
+
+	*) The first public version.
+	*) Feature: tcp ping
+	*) Feature: node failure notification
+
