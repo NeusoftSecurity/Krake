@@ -22,3 +22,5 @@ src/daemon/Makefile.in
 src/daemon/krake
 src/daemon/*.o
 stamp-h1
+cscope.*
+tags
