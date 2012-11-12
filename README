@@ -26,7 +26,7 @@ Installation
 
 Requires:
 * libevent2
-* libmnl
+* libxml2
 
 Read the INSTALL file in the source code tree.
 
