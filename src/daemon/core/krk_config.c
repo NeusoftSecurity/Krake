@@ -655,6 +655,7 @@ static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor,
     if (checker->parse_param) {
         if (monitor->parsed_checker_param) {
             free(monitor->parsed_checker_param);
+            monitor->parsed_checker_param = NULL;
         }
 
         ret = checker->parse_param(monitor, conf_monitor->checker_param, 

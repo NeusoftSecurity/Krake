@@ -435,6 +435,7 @@ struct krk_node* krk_monitor_create_node(const char *addr, unsigned short port)
     node->addr[KRK_IPADDR_LEN - 1] = 0;
 
     node->port = port;
+    node->down = 1;
 
     INIT_LIST_HEAD(&node->connection_list);
 
@@ -777,7 +778,7 @@ void krk_show_monitor_info(struct krk_monitor_info *info)
 {
     fprintf(stderr,"monitor name = %s\n",info->name);
     fprintf(stderr,"checker = %s\n",info->checker);
-    fprintf(stderr,"node number = %d\n",info->nr_nodes);
+    fprintf(stderr,"node number = %ld\n",info->nr_nodes);
     if (info->enabled) {
         fprintf(stderr,"monitor enabled\n");
     } else {
