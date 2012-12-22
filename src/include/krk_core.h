@@ -28,7 +28,7 @@
 #include <signal.h>
 #include <time.h>
 
-#define PID_FILE "/tmp/krake.pid"
+#define PID_FILE "/var/run/krake.pid"
 
 #define KRK_OK 0
 #define KRK_ERROR -1

@@ -19,7 +19,7 @@
 
 struct krk_node;
 
-#define LOCAL_SOCK_PATH "/tmp/krake.sock"
+#define LOCAL_SOCK_PATH "/var/run/krake.sock"
 #define LOCAL_SOCK_BACKLOG 5
 
 extern int krk_local_socket_init(void);
