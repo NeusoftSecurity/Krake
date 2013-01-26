@@ -470,6 +470,10 @@ int krk_monitor_destroy_all_nodes(struct krk_monitor *monitor)
 
     list_for_each_safe(p, n, &monitor->node_list) {
         tmp = list_entry(p, struct krk_node, list);
+        if (krk_monitor_remove_node(monitor, tmp)) {
+            ret = KRK_ERROR;
+        }
+
         if (krk_monitor_destroy_node(tmp)) {
             ret = KRK_ERROR;
         }

@@ -607,12 +607,6 @@ static int krk_config_process_log(struct krk_config_log *log)
     return krk_log_set_type(log->log_type, log->log_level);
 }
 
-static int krk_config_update_node(struct krk_config_node *conf_node, 
-                    struct krk_node *node) 
-{
-    return KRK_OK;
-}
-
 static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor, 
                     struct krk_monitor *monitor) 
 {
@@ -620,6 +614,8 @@ static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor,
     struct krk_config_node *conf_node = NULL;
     struct krk_node *node = NULL;
     int ret = KRK_OK;
+
+    krk_monitor_disable(monitor);
 
     monitor->interval = conf_monitor->interval;
     monitor->timeout = conf_monitor->timeout;
@@ -650,7 +646,19 @@ static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor,
         goto out;
     }
 
-    monitor->checker = checker;
+    /* if checker has been changed, remove & destroy all nodes before assign
+     * new checker to monitor
+     */
+    if (checker != monitor->checker) {
+        ret = krk_monitor_destroy_all_nodes(monitor);
+        if (ret != KRK_OK) {
+            krk_log(KRK_LOG_ALERT,"remove & destroy all nodes failed!\n");
+            ret = KRK_ERROR;
+            goto out;
+        }
+        
+        monitor->checker = checker;
+    }
 
     if (checker->parse_param) {
         if (monitor->parsed_checker_param) {
@@ -684,12 +692,6 @@ static int krk_config_update_monitor(struct krk_config_monitor *conf_monitor,
             ret = krk_monitor_add_node(monitor, node);
             if (ret == KRK_ERROR) {
                 krk_log(KRK_LOG_ALERT,"add node failed!\n");
-                goto out;
-            }
-        } else {
-            ret = krk_config_update_node(conf_node, node);
-            if (ret == KRK_ERROR) {
-                krk_log(KRK_LOG_ALERT,"update node failed!\n");
                 goto out;
             }
         }

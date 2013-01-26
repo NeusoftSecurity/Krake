@@ -550,6 +550,8 @@ static int http_init_node(struct krk_node *node)
 {
     struct http_response_header *hrh;
 
+    krk_log(KRK_LOG_DEBUG, "http init node, node: %s\n", node->addr);
+    
     node->ready = 1;
 
     node->buf = krk_buffer_create(4096);
@@ -572,6 +574,8 @@ static int http_init_node(struct krk_node *node)
 
 static int http_cleanup_node(struct krk_node *node)
 {
+    krk_log(KRK_LOG_DEBUG, "http cleanup node, node: %s\n", node->addr);
+    
     node->ready = 0;
 
     krk_buffer_destroy(node->buf);
