@@ -2,10 +2,10 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.64])
-AC_INIT(krake, 0.2.0, paulyang.inf@gmail.com, krake, http://sourceforge.net/projects/krake)
+AC_INIT(krake, 0.2.1, paulyang.inf@gmail.com, krake, http://sourceforge.net/projects/krake)
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE(krake, 0.2.0)
+AM_INIT_AUTOMAKE(krake, 0.2.1)
 
 # Checks for programs.
 AC_PROG_CC

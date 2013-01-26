@@ -1,3 +1,8 @@
+Changes with krake 0.2.1                                        26 Jan 2013
+	*) Bugfix: if change checker in the config file and reload krake to use
+	the new configuration will cause krake not sending packets any more
+
+
 Changes with krake 0.2.0                                        5 Jun 2012
 	*) Feature: add https support in http checker
 	*) Feature: change configuration method to a configuration file and
